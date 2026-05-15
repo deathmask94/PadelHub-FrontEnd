@@ -1,12 +1,3 @@
-// ============================================================
-// app/services/auth.mock.ts
-//
-// Servicio de autenticación SIMULADO (Mock).
-// Imita exactamente lo que hará la API real del backend.
-// Cuando el backend esté listo, solo reemplazas las funciones
-// aquí con llamadas fetch() reales — el resto de la app NO cambia.
-// ============================================================
-
 export interface User {
   id: number;
   nombre: string;
@@ -36,14 +27,17 @@ const MOCK_USERS: (User & { password: string; token: string })[] = [
   },
 ];
 
-// Simula latencia de red para que se sienta real
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// ── HU-002: Login ──────────────────────────────────────────
-// Producción: POST /api/auth/login → { token, user }
-export async function loginUser(telefono: string, password: string): Promise<{ token: string; user: User }> {
+// ── HU-002: Login ──────────────────────────────────────────────────────────────
+export async function loginUser(
+  telefono: string,
+  password: string
+): Promise<{ token: string; user: User }> {
   await delay(800);
-  const found = MOCK_USERS.find((u) => u.telefono === telefono && u.password === password);
+  const found = MOCK_USERS.find(
+    (u) => u.telefono === telefono && u.password === password
+  );
   if (!found) throw new Error("Teléfono o contraseña incorrectos");
   const { password: _, token, ...user } = found;
   sessionStorage.setItem("ph_token", token);
@@ -51,24 +45,67 @@ export async function loginUser(telefono: string, password: string): Promise<{ t
   return { token, user };
 }
 
-// ── HU-001: Registro ───────────────────────────────────────
-// Producción: POST /api/auth/register → { token, user }
-export async function registerUser(data: { nombre: string; telefono: string; password: string }): Promise<{ token: string; user: User }> {
+// ── HU-001a: Solo registrar (sin iniciar sesión) ───────────────────────────────
+// El usuario registra sus datos y luego hace login manual.
+// NO guarda nada en sessionStorage.
+export async function signUpUser(data: {
+  nombre: string;
+  telefono: string;
+  password: string;
+}): Promise<void> {
   await delay(1000);
   if (MOCK_USERS.find((u) => u.telefono === data.telefono)) {
     throw new Error("Este número ya está registrado");
   }
   const token = `mock-jwt-${Date.now()}`;
-  const user: User = { id: MOCK_USERS.length + 1, nombre: data.nombre, telefono: data.telefono, nivel: null, categoria: null, zona: null, edad: null, mmr: 1000, foto: null };
+  const user: User = {
+    id: MOCK_USERS.length + 1,
+    nombre:    data.nombre,
+    telefono:  data.telefono,
+    nivel:     null,
+    categoria: null,
+    zona:      null,
+    edad:      null,
+    mmr:       1000,
+    foto:      null,
+  };
+  // Solo agrega al "array de BD", sin tocar sessionStorage
+  MOCK_USERS.push({ ...user, password: data.password, token });
+}
+
+// ── HU-001b: Registro + login automático (por si se necesita en otro flujo) ────
+export async function registerUser(data: {
+  nombre: string;
+  telefono: string;
+  password: string;
+}): Promise<{ token: string; user: User }> {
+  await delay(1000);
+  if (MOCK_USERS.find((u) => u.telefono === data.telefono)) {
+    throw new Error("Este número ya está registrado");
+  }
+  const token = `mock-jwt-${Date.now()}`;
+  const user: User = {
+    id: MOCK_USERS.length + 1,
+    nombre:    data.nombre,
+    telefono:  data.telefono,
+    nivel:     null,
+    categoria: null,
+    zona:      null,
+    edad:      null,
+    mmr:       1000,
+    foto:      null,
+  };
   MOCK_USERS.push({ ...user, password: data.password, token });
   sessionStorage.setItem("ph_token", token);
   sessionStorage.setItem("ph_user", JSON.stringify(user));
   return { token, user };
 }
 
-// ── HU-003: Editar perfil ──────────────────────────────────
-// Producción: PUT /api/users/me
-export async function updateProfile(userId: number, data: Partial<User>): Promise<User> {
+// ── HU-003: Editar perfil ──────────────────────────────────────────────────────
+export async function updateProfile(
+  userId: number,
+  data: Partial<User>
+): Promise<User> {
   await delay(700);
   const i = MOCK_USERS.findIndex((u) => u.id === userId);
   if (i === -1) throw new Error("Usuario no encontrado");
@@ -78,16 +115,14 @@ export async function updateProfile(userId: number, data: Partial<User>): Promis
   return user;
 }
 
-// ── HU-004: Logout ─────────────────────────────────────────
-// Producción: POST /api/auth/logout (invalida JWT en Redis)
+// ── HU-004: Logout ─────────────────────────────────────────────────────────────
 export async function logoutUser(): Promise<void> {
   await delay(200);
   sessionStorage.removeItem("ph_token");
   sessionStorage.removeItem("ph_user");
 }
 
-// ── HU-005: Recuperar contraseña ───────────────────────────
-// Producción: POST /api/auth/forgot-password → envía OTP WhatsApp
+// ── HU-005: Recuperar contraseña ───────────────────────────────────────────────
 export async function forgotPassword(telefono: string): Promise<void> {
   await delay(1200);
   if (!MOCK_USERS.find((u) => u.telefono === telefono)) {
@@ -96,7 +131,17 @@ export async function forgotPassword(telefono: string): Promise<void> {
   console.log(`[MOCK] OTP enviado a ${telefono}: 123456`);
 }
 
-// ── Helpers ────────────────────────────────────────────────
+export async function resetPassword(
+  telefono: string,
+  newPassword: string
+): Promise<void> {
+  await delay(800);
+  const user = MOCK_USERS.find((u) => u.telefono === telefono);
+  if (!user) throw new Error("Usuario no encontrado");
+  user.password = newPassword;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 export function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem("ph_user");

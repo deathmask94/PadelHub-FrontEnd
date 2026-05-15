@@ -1,126 +1,238 @@
-// ============================================================
-// app/routes/perfil.tsx                        ← RUTA: /perfil
-//
-// Perfil del jugador — vista de solo lectura.
-// Muestra MMR, stats y historial.
-// El botón "Editar" navega a /perfil/editar (HU-003).
-// ============================================================
-
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import NavBar from "~/components/ui/NavBar";
 
-const HISTORIAL = [
-  { rival: "Pedro Rojas", resultado: "6-3 / 6-4", mmr: +18, ganó: true },
-  { rival: "Luis Vera",   resultado: "7-5 / 6-2", mmr: +22, ganó: true },
-  { rival: "Andrés Silva",resultado: "3-6 / 4-6", mmr: -14, ganó: false },
-];
+const MMR_EVOLUCION = [980, 1020, 1005, 1080, 1120, 1190, 1248];
+const SEMANAS       = ["S1","S2","S3","S4","S5","S6","S7"];
 
-export default function PerfilPage() {
-  const { user } = useAuth();
-  if (!user) return null;
+// Historial solo para el usuario demo (id=1 = Felipe)
+// Un usuario nuevo no tendrá entradas aquí → array vacío → estado vacío
+const PARTIDOS_MOCK: Record<number, { rival: string; resultado: string; mmr: number; win: boolean }[]> = {
+  1: [
+    { rival: "Pedro Rojas",  resultado: "6-3 / 6-4", mmr: +18, win: true  },
+    { rival: "Luis Vera",    resultado: "7-5 / 6-2", mmr: +22, win: true  },
+    { rival: "Andrés Silva", resultado: "3-6 / 4-6", mmr: -14, win: false },
+  ],
+};
 
-  const initials = user.nombre.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+export default function Perfil() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const initiales = user?.nombre
+    ? user.nombre.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+    : "?";
+
+  // Si el usuario no tiene historial → jugador nuevo
+  const partidos     = user?.id ? (PARTIDOS_MOCK[user.id] ?? []) : [];
+  const numPartidos  = partidos.length;
+  const victorias    = partidos.filter((p) => p.win).length;
+  const pctVictorias = numPartidos > 0 ? Math.round((victorias / numPartidos) * 100) : 0;
+  const esNuevo      = numPartidos === 0;
+
+  const maxMMR = Math.max(...MMR_EVOLUCION);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="ph-screen">
-      <div className="ph-top-bar">
-        <Link to="/home" className="ph-back-btn">←</Link>
-        <span className="ph-title">Mi perfil</span>
-        {/* Botón editar (HU-003) */}
-        <Link to="/perfil/editar" style={{
-          marginLeft: "auto", background: "rgba(79,70,229,0.15)",
-          border: "1px solid rgba(79,70,229,0.3)", borderRadius: 8,
-          padding: "4px 12px", fontSize: 12, color: "#a5b4fc",
-          fontWeight: 600, textDecoration: "none",
+      <div className="ph-scroll" style={{ padding: "0 0 16px" }}>
+
+        {/* ── Header ── */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "20px 20px 16px",
         }}>
-          Editar
-        </Link>
-      </div>
-
-      <div className="ph-scroll">
-        {/* ── Header perfil ───────────────────────────────────── */}
-        <div className="fade-up" style={{ display: "flex", alignItems: "flex-end", gap: 14, marginBottom: 16 }}>
-          <div className="ph-avatar" style={{ width: 72, height: 72, fontSize: 24, border: "2px solid rgba(79,70,229,0.5)" }}>
-            {initials}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700 }}>{user.nombre}</div>
-            <div style={{ fontSize: 13, color: "var(--text2)", margin: "2px 0 8px" }}>
-              {user.zona || "Sin zona"}{user.edad ? ` · ${user.edad} años` : ""}
-            </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {user.nivel && <span className="ph-pill ph-pill-purple">{user.nivel}{user.categoria ? ` · ${user.categoria}` : ""}</span>}
-              <span className="ph-pill ph-pill-green">38 victorias</span>
-            </div>
-          </div>
+          <button className="ph-back-btn" onClick={() => navigate(-1)}>←</button>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700 }}>Mi perfil</div>
+          <button
+            onClick={handleLogout}
+            style={{
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.25)",
+              borderRadius: 10, padding: "6px 12px",
+              color: "#fca5a5", fontSize: 12,
+              fontFamily: "var(--font-body)", fontWeight: 600,
+              cursor: "pointer", transition: "all .2s",
+            }}
+          >
+            Salir
+          </button>
         </div>
 
-        {/* ── MMR ─────────────────────────────────────────────── */}
-        <div className="ph-mmr-bar fade-up-1" style={{ marginBottom: 16 }}>
-          <div>
-            <div className="ph-section-label" style={{ marginBottom: 2 }}>MMR</div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 800, color: "var(--accent)", letterSpacing: -1 }}>
-              {user.mmr.toLocaleString()}
+        <div style={{ padding: "0 20px" }}>
+
+          {/* ── Cabecera usuario ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+            <div
+              className="ph-avatar"
+              style={{ width: 64, height: 64, fontSize: 22, background: "var(--accent)", borderRadius: 20, flexShrink: 0 }}
+            >
+              {initiales}
             </div>
-            <div style={{ fontSize: 12, color: "var(--text2)" }}>#14 en {user.zona || "tu zona"}</div>
-          </div>
-          <div style={{ marginLeft: "auto", textAlign: "right" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>▲ +127</div>
-            <div style={{ fontSize: 11, color: "var(--text2)" }}>último mes</div>
-          </div>
-        </div>
-
-        {/* ── Stats ───────────────────────────────────────────── */}
-        <div className="fade-up-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
-          {[
-            { val: "54",  label: "Partidos" },
-            { val: "70%", label: "Victorias" },
-            { val: "4.8", label: "Fair play" },
-          ].map((s) => (
-            <div key={s.label} className="ph-card" style={{ textAlign: "center", padding: 12 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700 }}>{s.val}</div>
-              <div style={{ fontSize: 10, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Evolución MMR ────────────────────────────────────── */}
-        <div className="ph-card fade-up-3" style={{ marginBottom: 16 }}>
-          <div className="ph-section-label" style={{ marginBottom: 12 }}>Evolución MMR — últimas 7 semanas</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 64 }}>
-            {[36,28,44,32,50,46,60].map((h, i) => (
-              <div key={i} style={{
-                flex: 1, height: h, borderRadius: "4px 4px 0 0",
-                background: i === 6 ? "var(--accent)" : `rgba(79,70,229,${0.35 + i * 0.04})`,
-              }} />
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-            {["S1","S2","S3","S4","S5","S6","S7"].map((s, i) => (
-              <span key={s} style={{ fontSize: 9, color: i === 6 ? "var(--accent)" : "var(--text2)", fontWeight: i === 6 ? 600 : 400 }}>{s}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Historial ───────────────────────────────────────── */}
-        <div className="ph-section-label fade-up-4">Últimos partidos</div>
-        <div className="ph-card fade-up-4">
-          {HISTORIAL.map((h, i) => (
-            <div key={i} className="ph-rank-item" style={{ cursor: "default" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: h.ganó ? "var(--green)" : "var(--red)", flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>vs. {h.rival}</div>
-                <div style={{ fontSize: 11, color: "var(--text2)" }}>{h.resultado}</div>
+            <div>
+              <div style={{
+                fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800,
+                textTransform: "uppercase", lineHeight: 1.15, marginBottom: 6,
+              }}>
+                {user?.nombre ?? "Usuario"}
               </div>
-              <span className={`ph-pill ${h.ganó ? "ph-pill-green" : "ph-pill-red"}`}>
-                {h.mmr > 0 ? "+" : ""}{h.mmr}
-              </span>
+              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 8 }}>
+                {user?.zona && user?.edad
+                  ? `${user.zona} · ${user.edad} años`
+                  : user?.zona ?? "—"}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {user?.nivel
+                  ? <span className="ph-pill ph-pill-purple">{user.nivel}{user.categoria ? ` · ${user.categoria}` : ""}</span>
+                  : <span className="ph-pill ph-pill-gray">Sin categoría aún</span>
+                }
+                {!esNuevo && (
+                  <span className="ph-pill ph-pill-green">{victorias} victorias</span>
+                )}
+              </div>
             </div>
-          ))}
+          </div>
+
+          {/* ── Datos adicionales ── */}
+          <div style={{ textAlign: "right", marginBottom: 14 }}>
+            <span
+              onClick={() => navigate("/perfil/editar")}
+              style={{ fontSize: 13, color: "var(--accent)", cursor: "pointer", textDecoration: "underline" }}
+            >
+              Datos adicionales →
+            </span>
+          </div>
+
+          {/* ── MMR card ── */}
+          <div className="ph-mmr-bar" style={{ marginBottom: 14 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4 }}>
+                MMR
+              </div>
+              <div className="ph-mmr-num">{user?.mmr ?? 1000}</div>
+              <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
+                {esNuevo
+                  ? "Juega partidos para obtener ranking"
+                  : `#14 en ${user?.zona ?? "tu zona"}`}
+              </div>
+            </div>
+            {!esNuevo && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 13, color: "#4ade80", fontWeight: 600 }}>▲ +127</div>
+                <div style={{ fontSize: 11, color: "var(--text2)" }}>último mes</div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Stats ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+            {[
+              { val: esNuevo ? "0" : String(numPartidos), label: "Partidos"  },
+              { val: esNuevo ? "—" : `${pctVictorias}%`, label: "Victorias" },
+              { val: esNuevo ? "—" : "4.8",              label: "Fair Play" },
+            ].map((s) => (
+              <div key={s.label} className="ph-card" style={{ textAlign: "center", padding: "14px 8px" }}>
+                <div style={{
+                  fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, marginBottom: 4,
+                  color: s.val === "—" ? "var(--text2)" : "var(--text)",
+                }}>
+                  {s.val}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Evolución MMR ── */}
+          <div className="ph-card" style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 14 }}>
+              Evolución MMR — Últimas 7 semanas
+            </div>
+            {esNuevo ? (
+              <div style={{
+                height: 80, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 6,
+              }}>
+                <div style={{ fontSize: 24 }}>📈</div>
+                <div style={{ fontSize: 12, color: "var(--text2)", textAlign: "center" }}>
+                  Tu evolución aparecerá aquí cuando juegues partidos
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+                {MMR_EVOLUCION.map((v, i) => (
+                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <div style={{
+                      width: "100%",
+                      height: `${(v / maxMMR) * 100}%`,
+                      background: i === MMR_EVOLUCION.length - 1 ? "var(--accent)" : "rgba(79,70,229,0.35)",
+                      borderRadius: "4px 4px 0 0",
+                    }} />
+                    <span style={{ fontSize: 10, color: "var(--text2)" }}>{SEMANAS[i]}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Últimos partidos ── */}
+          <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+            Últimos partidos
+          </div>
+
+          {esNuevo ? (
+            <div className="ph-card" style={{ textAlign: "center", padding: "28px 16px", marginBottom: 8 }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>🎾</div>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Sin partidos aún</div>
+              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>
+                Crea o únete a un partido para empezar a construir tu historial
+              </div>
+              <button
+                className="ph-btn"
+                onClick={() => navigate("/crear")}
+                style={{ maxWidth: 200, margin: "0 auto" }}
+              >
+                Crear partido
+              </button>
+            </div>
+          ) : (
+            <div className="ph-card" style={{ marginBottom: 8 }}>
+              {partidos.map((p, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "12px 0",
+                    borderBottom: i < partidos.length - 1 ? "1px solid var(--border)" : "none",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: "50%",
+                      background: p.win ? "var(--green)" : "var(--red)",
+                      display: "inline-block", flexShrink: 0,
+                    }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>vs. {p.rival}</div>
+                      <div style={{ fontSize: 12, color: "var(--text2)" }}>{p.resultado}</div>
+                    </div>
+                  </div>
+                  <span className={`ph-pill ${p.win ? "ph-pill-green" : "ph-pill-red"}`} style={{ fontWeight: 700, fontSize: 12 }}>
+                    {p.mmr > 0 ? `+${p.mmr}` : p.mmr}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
-
       <NavBar />
     </div>
   );

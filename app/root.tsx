@@ -8,6 +8,9 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { AuthProvider, useAuth } from "~/context/AuthContext";
+import { PartidosProvider } from "~/context/PartidosContext";
+import ProtectedRoute from "~/components/ui/ProtectedRoute";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
@@ -19,20 +22,26 @@ export const links: Route.LinksFunction = () => [
   },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap",
   },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body>
+      <body
+        style={{
+          margin: 0, padding: 0, minHeight: "100vh",
+          background: "#05050d",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -41,8 +50,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Accede al userId ya resuelto por AuthProvider antes de montar PartidosProvider
+function AppWithProviders() {
+  const { user } = useAuth();
+  return (
+    <PartidosProvider userId={user?.id}>
+      <ProtectedRoute>
+        <Outlet />
+      </ProtectedRoute>
+    </PartidosProvider>
+  );
+}
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <AuthProvider>
+      <AppWithProviders />
+    </AuthProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
@@ -62,11 +87,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
+    <main style={{ padding: "64px 16px", fontFamily: "var(--font-body)", color: "var(--text)" }}>
       <h1>{message}</h1>
       <p>{details}</p>
       {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
+        <pre style={{ width: "100%", padding: 16, overflowX: "auto" }}>
           <code>{stack}</code>
         </pre>
       )}
