@@ -1,13 +1,12 @@
 import { useAuth } from "~/context/AuthContext";
 import { Navigate, useLocation } from "react-router";
-import { isAuthenticated } from "~/services/auth.mock";
+import { isAuthenticated } from "~/services/auth";
 
 interface Props {
   children: React.ReactNode;
 }
 
-// Rutas públicas que NO requieren sesión
-const PUBLIC_ROUTES = ["/login", "/register"];
+const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 export default function ProtectedRoute({ children }: Props) {
   const { isLogged, loading } = useAuth();
@@ -15,21 +14,12 @@ export default function ProtectedRoute({ children }: Props) {
 
   const isPublic = PUBLIC_ROUTES.includes(location.pathname);
 
-  // Durante la hidratación inicial
   if (loading) {
     const hasSession = isAuthenticated();
 
-    // Ruta pública con sesión activa → redirige al home
-    if (isPublic && hasSession) {
-      return <Navigate to="/home" replace />;
-    }
+    if (isPublic && hasSession) return <Navigate to="/home" replace />;
+    if (!isPublic && !hasSession) return <Navigate to="/login" replace />;
 
-    // Ruta protegida sin sesión → redirige al login
-    if (!isPublic && !hasSession) {
-      return <Navigate to="/login" replace />;
-    }
-
-    // En cualquier otro caso durante loading → muestra spinner
     return (
       <div style={{
         height: "100vh",
@@ -46,16 +36,8 @@ export default function ProtectedRoute({ children }: Props) {
     );
   }
 
-  // Ruta pública con sesión activa (ej: usuario logueado intenta ir a /login)
-  // → redirige al home automáticamente
-  if (isPublic && isLogged) {
-    return <Navigate to="/home" replace />;
-  }
-
-  // Ruta protegida sin sesión → redirige al login
-  if (!isPublic && !isLogged) {
-    return <Navigate to="/login" replace />;
-  }
+  if (isPublic && isLogged) return <Navigate to="/home" replace />;
+  if (!isPublic && !isLogged) return <Navigate to="/login" replace />;
 
   return <>{children}</>;
 }

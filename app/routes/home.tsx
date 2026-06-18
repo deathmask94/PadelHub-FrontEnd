@@ -1,37 +1,103 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
-import { usePartidos } from "~/context/PartidosContext";
 import NavBar from "~/components/ui/NavBar";
+import { getMatches, getMyMatches, joinMatch, respondInvitation, type Match, type MatchFilters } from "~/services/matches";
 
-// Actividad reciente: solo para el usuario demo (id=1)
-const ACTIVIDAD_DEMO: Record<number, { rival: string; resultado: string; hace: string; mmr: number; win: boolean }[]> = {
-  1: [
-    { rival: "Pedro Rojas",  resultado: "6-3 / 6-4", hace: "Hace 3 días", mmr: +18, win: true  },
-    { rival: "Luis Vera",    resultado: "7-5 / 6-2", hace: "Hace 5 días", mmr: +22, win: true  },
-    { rival: "Andrés Silva", resultado: "3-6 / 4-6", hace: "Hace 7 días", mmr: -14, win: false },
-  ],
+const DIAS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const NIVEL_LABEL: Record<string, string> = {
+  primera: "1ra", segunda: "2da", tercera: "3ra",
+  cuarta: "4ta", quinta: "5ta", sexta: "6ta", septima_mas: "7ma+",
+};
+const ZONAS = [
+  "Valparaíso","Viña del Mar","Quilpué","Villa Alemana",
+  "Concón","Santiago Centro","Providencia","Las Condes",
+];
+
+function formatMatchDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]}`;
+}
+
+function formatTime(timeStr: string): string {
+  return new Date(timeStr).toLocaleTimeString("es-CL", {
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  });
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  open: "Abierto", confirmed: "Confirmado",
+  in_progress: "En curso", finished: "Finalizado", cancelled: "Cancelado",
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  open: "ph-pill-green", confirmed: "ph-pill-green",
+  in_progress: "ph-pill-green", finished: "ph-pill-gray", cancelled: "ph-pill-red",
 };
 
 export default function Home() {
   const { user, logout } = useAuth();
-  const { partidos }     = usePartidos();
-  const navigate         = useNavigate();
+  const navigate = useNavigate();
+
+  const [matches,      setMatches]      = useState<Match[]>([]);
+  const [myMatches,    setMyMatches]    = useState<Match[]>([]);
+  const [loadingM,     setLoadingM]     = useState(true);
+  const [errorM,       setErrorM]       = useState("");
+  const [activeTab,    setActiveTab]    = useState<'all' | 'mine'>('all');
+  const [joiningId,    setJoiningId]    = useState<string | null>(null);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [filters,      setFilters]      = useState<MatchFilters>({ zone: "", format: undefined, date: undefined });
+
+  useEffect(() => {
+    const activeFilters: MatchFilters = {
+      zone:   filters.zone   || undefined,
+      format: filters.format || undefined,
+      date:   filters.date   || undefined,
+    };
+    setLoadingM(true);
+    Promise.all([getMatches(activeFilters), getMyMatches()])
+      .then(([all, mine]) => { setMatches(all); setMyMatches(mine); })
+      .catch((e: Error) => setErrorM(e.message))
+      .finally(() => setLoadingM(false));
+  }, [filters]);
+
+  const reload = async () => {
+    const activeFilters: MatchFilters = {
+      zone:   filters.zone   || undefined,
+      format: filters.format || undefined,
+      date:   filters.date   || undefined,
+    };
+    const [all, mine] = await Promise.all([getMatches(activeFilters), getMyMatches()]);
+    setMatches(all); setMyMatches(mine);
+  };
+
+  const handleJoin = async (matchId: string) => {
+    setJoiningId(matchId);
+    try { await joinMatch(matchId); await reload(); }
+    catch (e: unknown) { setErrorM(e instanceof Error ? e.message : 'Error al unirse'); }
+    finally { setJoiningId(null); }
+  };
+
+  const handleRespond = async (matchId: string, accept: boolean) => {
+    setRespondingId(matchId);
+    try { await respondInvitation(matchId, accept); await reload(); }
+    catch (e: unknown) { setErrorM(e instanceof Error ? e.message : 'Error al responder'); }
+    finally { setRespondingId(null); }
+  };
 
   const initiales = user?.nombre
     ? user.nombre.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?";
 
-  // Próximo partido: el primero del array (el más reciente creado)
-  const proximoPartido = partidos[0] ?? null;
-
-  // Actividad reciente: solo usuario demo, usuario nuevo ve estado vacío
-  const actividad = user?.id ? (ACTIVIDAD_DEMO[user.id] ?? []) : [];
-  const esNuevo   = actividad.length === 0;
-
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
   };
+
+  const proximoPartido = matches.find(
+    (m) => m.status === "open" || m.status === "confirmed"
+  ) ?? null;
 
   return (
     <div className="ph-screen">
@@ -51,12 +117,15 @@ export default function Home() {
             onClick={() => navigate("/perfil")}
             style={{
               width: 44, height: 44, background: "var(--accent)", borderRadius: 14,
-              border: "none", cursor: "pointer",
+              border: "none", cursor: "pointer", overflow: "hidden",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#fff",
             }}
           >
-            {initiales}
+            {user?.photo_url
+              ? <img src={user.photo_url} alt={user.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : initiales
+            }
           </button>
         </div>
 
@@ -68,28 +137,17 @@ export default function Home() {
             </div>
             <div className="ph-mmr-num">{user?.mmr ?? 1000}</div>
             <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
-              {esNuevo
-                ? "Juega partidos para obtener ranking"
-                : `#14 en ${user?.zona ?? "tu zona"}`}
+              Juega partidos para subir en el ranking
             </div>
           </div>
           <div className="ph-bars-chart">
             {[30, 45, 35, 55, 48, 65, 80].map((h, i) => (
-              <div
-                key={i}
-                className="ph-bar"
-                style={{
-                  height: `${h}%`,
-                  background: i === 6 ? "var(--accent)" : "rgba(79,70,229,0.3)",
-                }}
-              />
+              <div key={i} className="ph-bar" style={{
+                height: `${h}%`,
+                background: i === 6 ? "var(--accent)" : "rgba(132,204,22,0.3)",
+              }} />
             ))}
           </div>
-          {!esNuevo && (
-            <div style={{ fontSize: 12, color: "#4ade80", fontWeight: 600, alignSelf: "flex-end" }}>
-              ▲ +127 este mes
-            </div>
-          )}
         </div>
 
         {/* ── Próximo partido ── */}
@@ -97,53 +155,31 @@ export default function Home() {
           Próximo partido
         </div>
 
-        {proximoPartido ? (
-          <div
-            className="ph-upcoming-card"
-            onClick={() => navigate("/crear")}
-            style={{ marginBottom: 20 }}
-          >
+        {loadingM ? (
+          <div className="ph-card" style={{ marginBottom: 20, textAlign: "center", padding: "20px", color: "var(--text2)", fontSize: 13 }}>
+            Cargando…
+          </div>
+        ) : proximoPartido ? (
+          <div className="ph-upcoming-card" style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <span className="ph-pill ph-pill-purple">
-                  {proximoPartido.formato === "dobles" ? "Dobles" : "Individual"}
-                </span>
-                <span className="ph-pill ph-pill-green">{proximoPartido.estado}</span>
-              </div>
-              <span style={{ fontSize: 12, color: "var(--text2)" }}>{proximoPartido.fechaStr}</span>
+              <span className={`ph-pill ${STATUS_CLASS[proximoPartido.status] ?? "ph-pill-gray"}`}>
+                {STATUS_LABEL[proximoPartido.status]}
+              </span>
+              <span style={{ fontSize: 12, color: "var(--text2)" }}>
+                {formatMatchDate(proximoPartido.match_date)}
+              </span>
             </div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
               {proximoPartido.club}
             </div>
-            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 12 }}>
-              {proximoPartido.hora}{proximoPartido.cancha ? ` · ${proximoPartido.cancha}` : ""}
+            <div style={{ fontSize: 13, color: "var(--text2)" }}>
+              {formatTime(proximoPartido.match_time)} · {proximoPartido.format === "doubles" ? "Dobles" : "Individual"}
             </div>
-            {proximoPartido.jugadores.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                {proximoPartido.jugadores.map((j, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    {proximoPartido.formato === "dobles" && i === 2 && (
-                      <span style={{ fontSize: 11, color: "var(--text2)", margin: "0 2px" }}>vs</span>
-                    )}
-                    <div
-                      className="ph-avatar"
-                      style={{ width: 32, height: 32, fontSize: 12, background: j.color }}
-                    >
-                      {j.ini}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         ) : (
-          /* Estado vacío: sin partido registrado */
           <div
             className="ph-card"
-            style={{
-              marginBottom: 20, textAlign: "center", padding: "20px 16px",
-              border: "1px dashed var(--border)", cursor: "pointer",
-            }}
+            style={{ marginBottom: 20, textAlign: "center", padding: "20px 16px", border: "1px dashed var(--border)", cursor: "pointer" }}
             onClick={() => navigate("/crear")}
           >
             <div style={{ fontSize: 28, marginBottom: 8 }}>🎾</div>
@@ -171,53 +207,247 @@ export default function Home() {
           ))}
         </div>
 
-        {/* ── Actividad reciente ── */}
-        <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
-          Actividad reciente
+        {/* ── Tabs de partidos ── */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          {(['all', 'mine'] as const).map((tab) => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+              flex: 1, padding: "8px 0", borderRadius: 10, border: "none",
+              fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              background: activeTab === tab ? "var(--accent)" : "var(--bg3)",
+              color:      activeTab === tab ? "#fff"          : "var(--text2)",
+              transition: "all .2s",
+            }}>
+              {tab === 'all' ? 'Disponibles' : 'Mis partidos'}
+            </button>
+          ))}
         </div>
 
-        {esNuevo ? (
-          <div className="ph-card" style={{ textAlign: "center", padding: "24px 16px", marginBottom: 24 }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Sin actividad aún</div>
-            <div style={{ fontSize: 12, color: "var(--text2)" }}>
-              Tus partidos jugados aparecerán aquí
-            </div>
-          </div>
-        ) : (
-          <div className="ph-card" style={{ marginBottom: 24 }}>
-            {actividad.map((a, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "12px 0",
-                  borderBottom: i < actividad.length - 1 ? "1px solid var(--border)" : "none",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: "50%",
-                    background: a.win ? "var(--green)" : "var(--red)",
-                    display: "inline-block", flexShrink: 0,
-                  }} />
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>
-                      {a.win ? "Victoria" : "Derrota"} vs {a.rival}
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--text2)" }}>{a.resultado} · {a.hace}</div>
-                  </div>
-                </div>
-                <span className={`ph-pill ${a.win ? "ph-pill-green" : "ph-pill-red"}`} style={{ fontSize: 12, fontWeight: 700 }}>
-                  {a.mmr > 0 ? `+${a.mmr}` : a.mmr} MMR
-                </span>
+        {/* ── Filtros (solo en tab Disponibles) ── */}
+        {activeTab === 'all' && (
+          <div style={{ marginBottom: 12 }}>
+            {/* Zona */}
+            <select
+              value={filters.zone ?? ""}
+              onChange={(e) => setFilters((f) => ({ ...f, zone: e.target.value }))}
+              className="ph-select"
+              style={{ marginBottom: 8, fontSize: 12 }}
+            >
+              <option value="">Todas las zonas</option>
+              {ZONAS.map((z) => <option key={z} value={z}>{z}</option>)}
+            </select>
+
+            {/* Formato + Fecha en fila */}
+            <div style={{ display: "flex", gap: 6 }}>
+              {/* Formato */}
+              <div style={{ display: "flex", flex: 1, gap: 4 }}>
+                {([
+                  { val: undefined,   label: "Todos"     },
+                  { val: "doubles",   label: "Dobles"    },
+                  { val: "singles",   label: "Individual"},
+                ] as { val: 'doubles' | 'singles' | undefined; label: string }[]).map(({ val, label }) => (
+                  <button key={label}
+                    onClick={() => setFilters((f) => ({ ...f, format: val }))}
+                    style={{
+                      flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid var(--border)",
+                      fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      background: filters.format === val ? "rgba(132,204,22,0.12)" : "var(--bg3)",
+                      color:      filters.format === val ? "var(--accent)"          : "var(--text2)",
+                      transition: "all .15s",
+                    }}
+                  >{label}</button>
+                ))}
               </div>
-            ))}
+
+              {/* Fecha */}
+              <div style={{ display: "flex", flex: 1, gap: 4 }}>
+                {([
+                  { val: undefined, label: "Siempre" },
+                  { val: "today",   label: "Hoy"     },
+                  { val: "week",    label: "7 días"  },
+                ] as { val: 'today' | 'week' | undefined; label: string }[]).map(({ val, label }) => (
+                  <button key={label}
+                    onClick={() => setFilters((f) => ({ ...f, date: val }))}
+                    style={{
+                      flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid var(--border)",
+                      fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      background: filters.date === val ? "rgba(132,204,22,0.12)" : "var(--bg3)",
+                      color:      filters.date === val ? "var(--accent)"          : "var(--text2)",
+                      transition: "all .15s",
+                    }}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Cerrar sesión discreto */}
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
+        {errorM && <div className="ph-error">{errorM}</div>}
+
+        {loadingM && (
+          <div className="ph-card" style={{ textAlign: "center", padding: "20px", color: "var(--text2)", fontSize: 13, marginBottom: 8 }}>
+            Cargando…
+          </div>
+        )}
+
+        {!loadingM && activeTab === 'all' && (
+          <>
+            {matches.length === 0 && !errorM ? (
+              <div className="ph-card" style={{ textAlign: "center", padding: "24px 16px", marginBottom: 24 }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🎾</div>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Sin partidos disponibles</div>
+                <div style={{ fontSize: 12, color: "var(--text2)" }}>Sé el primero en crear uno</div>
+              </div>
+            ) : (
+              matches.slice(0, 10).map((m) => {
+                const isOrganizer = m.organizer_id === user?.id;
+                const isJoining   = joiningId === m.id;
+                const total       = m.max_players ?? (m.format === "doubles" ? 4 : 2);
+                const filled      = m.player_count ?? 1;
+                return (
+                  <div
+                    key={m.id} className="ph-card"
+                    style={{ marginBottom: 8, padding: "12px 14px", cursor: "pointer" }}
+                    onClick={() => navigate(`/matches/${m.id}`)}
+                  >
+                    {/* Fila 1: club + status */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{m.club}</div>
+                      <span className="ph-pill ph-pill-green" style={{ fontSize: 10 }}>Abierto</span>
+                    </div>
+
+                    {/* Fila 2: fecha, hora, formato */}
+                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>
+                      📅 {formatMatchDate(m.match_date)} · ⏰ {formatTime(m.match_time)} · {m.format === "doubles" ? "Dobles" : "Individual"}
+                    </div>
+
+                    {/* Fila 3: organizador con nivel */}
+                    {m.users && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <div style={{
+                          width: 22, height: 22, borderRadius: 6, background: "var(--accent)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 9, fontWeight: 700, color: "#fff", flexShrink: 0,
+                        }}>
+                          {m.users.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                        </div>
+                        <span style={{ fontSize: 12, color: "var(--text2)" }}>{m.users.name}</span>
+                        {m.users.level && (
+                          <span className="ph-pill ph-pill-green" style={{ fontSize: 10, padding: "1px 6px" }}>
+                            {NIVEL_LABEL[m.users.level] ?? m.users.level}
+                          </span>
+                        )}
+                        {m.users.mmr && (
+                          <span style={{ fontSize: 11, color: "var(--text2)" }}>{m.users.mmr} MMR</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Fila 4: slots + botón */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {Array.from({ length: total }).map((_, i) => (
+                          <span key={i} style={{
+                            fontSize: 10, lineHeight: 1,
+                            color: i < filled ? "var(--accent)" : "var(--border)",
+                          }}>●</span>
+                        ))}
+                        <span style={{ fontSize: 11, color: "var(--text2)", marginLeft: 4 }}>
+                          {filled}/{total}
+                        </span>
+                      </div>
+                      {!isOrganizer ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleJoin(m.id); }}
+                          disabled={isJoining}
+                          style={{
+                            padding: "6px 14px", borderRadius: 8, border: "none",
+                            background: "rgba(132,204,22,0.12)", color: "var(--accent)",
+                            fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
+                            cursor: isJoining ? "default" : "pointer",
+                          }}
+                        >
+                          {isJoining ? "…" : "Unirse"}
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: 11, color: "var(--accent)" }}>Ver detalle →</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {!loadingM && activeTab === 'mine' && (
+          <>
+            {myMatches.length === 0 && !errorM ? (
+              <div className="ph-card" style={{ textAlign: "center", padding: "24px 16px", marginBottom: 24 }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Sin partidos aún</div>
+                <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12 }}>Crea o únete a un partido</div>
+                <button className="ph-btn" onClick={() => navigate("/crear")} style={{ maxWidth: 180, margin: "0 auto", fontSize: 13 }}>
+                  Crear partido
+                </button>
+              </div>
+            ) : (
+              myMatches.slice(0, 10).map((m) => {
+                const myEntry = (m as Match & { match_players?: { user_id: string; status: string }[] })
+                  .match_players?.find((p) => p.user_id === user?.id);
+                const isPending = myEntry?.status === 'pending';
+                const isResponding = respondingId === m.id;
+                return (
+                  <div
+                    key={m.id} className="ph-card"
+                    style={{ marginBottom: 8, padding: "12px 14px", cursor: "pointer" }}
+                    onClick={() => navigate(`/matches/${m.id}`)}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isPending ? 10 : 0 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>{m.club}</div>
+                        <div style={{ fontSize: 12, color: "var(--text2)" }}>
+                          {formatMatchDate(m.match_date)} · {formatTime(m.match_time)}
+                        </div>
+                      </div>
+                      <span className={`ph-pill ${isPending ? "ph-pill-gray" : STATUS_CLASS[m.status] ?? "ph-pill-gray"}`} style={{ fontSize: 11 }}>
+                        {isPending ? "Invitación" : STATUS_LABEL[m.status]}
+                      </span>
+                    </div>
+                    {isPending && (
+                      <div style={{ display: "flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleRespond(m.id, true)}
+                          disabled={isResponding}
+                          style={{
+                            flex: 1, padding: "7px 0", borderRadius: 8, border: "none",
+                            background: "var(--accent)", color: "#fff",
+                            fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                          }}
+                        >
+                          {isResponding ? "…" : "✓ Aceptar"}
+                        </button>
+                        <button
+                          onClick={() => handleRespond(m.id, false)}
+                          disabled={isResponding}
+                          style={{
+                            flex: 1, padding: "7px 0", borderRadius: 8,
+                            border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.08)",
+                            color: "#fca5a5", fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                          }}
+                        >
+                          {isResponding ? "…" : "✕ Rechazar"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {/* Cerrar sesión */}
+        <div style={{ textAlign: "center", marginBottom: 24, marginTop: 8 }}>
           <span
             onClick={handleLogout}
             style={{ fontSize: 12, color: "var(--text2)", cursor: "pointer", textDecoration: "underline" }}

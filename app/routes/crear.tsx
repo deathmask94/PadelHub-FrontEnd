@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
-import { usePartidos, type Jugador } from "~/context/PartidosContext";
 import NavBar from "~/components/ui/NavBar";
+import { createMatch } from "~/services/matches";
 
 const CLUBS = [
   { nombre: "Viña Pádel Club",         abre: "09:00", cierra: "22:30" },
@@ -49,9 +49,8 @@ const JUGADORES_MOCK = [
 ];
 
 export default function CrearPartido() {
-  const { user }           = useAuth();
-  const { agregarPartido } = usePartidos();
-  const navigate            = useNavigate();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const today = new Date(); today.setHours(0,0,0,0);
 
@@ -71,8 +70,8 @@ export default function CrearPartido() {
   const [jugadores,      setJugadores]      = useState<(typeof JUGADORES_MOCK[0]|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
 
-  const [notif,          setNotif]          = useState<"whatsapp"|"push">("whatsapp");
   const [toast,          setToast]          = useState("");
+  const [saving,         setSaving]         = useState(false);
 
   const initiales = user?.nombre
     ? user.nombre.split(" ").map((n) => n[0]).slice(0,2).join("").toUpperCase()
@@ -115,38 +114,31 @@ export default function CrearPartido() {
     setTimeout(() => setToast(""), 3000);
   };
 
-  const handleCrear = () => {
+  const handleCrear = async () => {
     if (!selectedClub) { showToastMsg("Selecciona un club"); return; }
     if (!selectedTime) { showToastMsg("Selecciona una hora"); return; }
+    if (!user)         { showToastMsg("Debes iniciar sesión"); return; }
 
-    // Construir lista de jugadores: tú primero, luego los seleccionados
-    const jugadoresPartido: Jugador[] = [
-      { ini: initiales, nombre: user?.nombre?.split(" ")[0] ?? "Tú", color: "var(--accent)" },
-      ...slots.filter(Boolean).map((j) => ({
-        ini:    j!.ini,
-        nombre: j!.nombre,
-        color:  j!.color,
-      })),
-    ];
+    setSaving(true);
+    try {
+      const matchDate = selectedDate.toISOString().split("T")[0];
+      const matchTime = `${matchDate}T${selectedTime}:00`;
 
-    // Guardar en el contexto global → se refleja inmediatamente en home
-    agregarPartido({
-      fecha:     selectedDate,
-      fechaStr:  formatDateStr(selectedDate),
-      hora:      selectedTime,
-      club:      selectedClub.nombre,
-      cancha:    "",
-      formato,
-      jugadores: jugadoresPartido,
-      notif,
-      estado:    "Confirmado",
-    });
+      await createMatch({
+        organizer_id: user.id,
+        club:         selectedClub.nombre,
+        format:       formato === "dobles" ? "doubles" : "singles",
+        match_date:   matchDate,
+        match_time:   matchTime,
+      });
 
-    const medio = notif === "whatsapp" ? "WhatsApp" : "Push";
-    showToastMsg(`¡Partido creado! Notificación enviada por ${medio}`);
-
-    // Volver al home después de 1.5s para que el usuario vea el toast
-    setTimeout(() => navigate("/home"), 1500);
+      showToastMsg("¡Partido creado! Ya aparece en Disponibles para todos los jugadores.");
+      setTimeout(() => navigate("/home"), 1500);
+    } catch (err: unknown) {
+      showToastMsg(err instanceof Error ? err.message : "Error al crear el partido");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const { firstDay, daysInMonth } = getDaysInMonth(calYear, calMonth);
@@ -375,28 +367,17 @@ export default function CrearPartido() {
             </div>
           </div>
 
-          {/* Notificaciones */}
-          <div style={{ marginBottom:20 }}>
-            <label className="ph-label">Notificar por</label>
-            <div style={{ display:"flex", gap:10 }}>
-              {(["whatsapp","push"] as const).map(n=>(
-                <button key={n} onClick={()=>setNotif(n)}
-                  className={`ph-format-opt${notif===n?" selected":""}`}
-                  style={{
-                    background: notif===n&&n==="whatsapp"?"rgba(37,211,102,0.1)":undefined,
-                    borderColor: notif===n&&n==="whatsapp"?"#25d366":undefined,
-                  }}>
-                  <div style={{ fontSize:22, marginBottom:4 }}>{n==="whatsapp"?"📱":"🔔"}</div>
-                  <div style={{ fontFamily:"var(--font-display)", fontSize:14, fontWeight:700, color:"var(--text)" }}>
-                    {n==="whatsapp"?"WhatsApp":"Push"}
-                  </div>
-                </button>
-              ))}
-            </div>
+          {/* Info visibilidad */}
+          <div style={{
+            background: "rgba(132,204,22,0.08)", border: "1px solid var(--border2)",
+            borderRadius: 10, padding: "10px 14px", fontSize: 12,
+            color: "var(--accent)", marginBottom: 20,
+          }}>
+            🔔 El partido quedará visible en <strong>Disponibles</strong> para todos los jugadores de la app. Quien lo acepte quedará inscrito automáticamente.
           </div>
 
-          <button className="ph-btn" onClick={handleCrear} style={{ marginBottom:8 }}>
-            Crear y notificar
+          <button className="ph-btn" onClick={handleCrear} disabled={saving} style={{ marginBottom:8 }}>
+            {saving ? "Creando..." : "Crear partido"}
           </button>
 
         </div>

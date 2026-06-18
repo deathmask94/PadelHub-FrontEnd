@@ -3,8 +3,10 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
+import { useNavigate } from "react-router";
 import {
   loginUser,
   registerUser,
@@ -12,44 +14,62 @@ import {
   updateProfile,
   getStoredUser,
   isAuthenticated,
-  type User,
-} from "~/services/auth.mock";
+  type FrontendUser,
+} from "~/services/auth";
 
 interface AuthContextType {
-  user: User | null;
+  user: FrontendUser | null;
   isLogged: boolean;
   loading: boolean;
-  login: (telefono: string, password: string) => Promise<void>;
+  login: (rut: string, password: string) => Promise<void>;
   register: (data: {
-    nombre: string;
-    telefono: string;
+    rut: string;
+    dv_rut: string;
+    phone: string;
+    name: string;
+    email?: string;
     password: string;
+    zone: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
-  editarPerfil: (data: Partial<User>) => Promise<void>;
+  editarPerfil: (data: Partial<FrontendUser>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FrontendUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // Al montar: recupera sesión guardada en sessionStorage
+  const handleSessionExpired = useCallback(() => {
+    setUser(null);
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
   useEffect(() => {
     if (isAuthenticated()) setUser(getStoredUser());
     setLoading(false);
   }, []);
 
-  const login = async (telefono: string, password: string) => {
-    const { user } = await loginUser(telefono, password);
+  useEffect(() => {
+    window.addEventListener("padelhub:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("padelhub:session-expired", handleSessionExpired);
+  }, [handleSessionExpired]);
+
+  const login = async (rut: string, password: string) => {
+    const { user } = await loginUser(rut, password);
     setUser(user);
   };
 
   const register = async (data: {
-    nombre: string;
-    telefono: string;
+    rut: string;
+    dv_rut: string;
+    phone: string;
+    name: string;
+    email?: string;
     password: string;
+    zone: string;
   }) => {
     const { user } = await registerUser(data);
     setUser(user);
@@ -60,9 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const editarPerfil = async (data: Partial<User>) => {
+  const editarPerfil = async (data: Partial<FrontendUser>) => {
     if (!user) return;
-    const updated = await updateProfile(user.id, data);
+    const updated = await updateProfile(user.rut, data);
     setUser(updated);
   };
 

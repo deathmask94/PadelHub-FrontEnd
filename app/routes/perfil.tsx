@@ -1,9 +1,21 @@
 import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
 import { useAuth } from "~/context/AuthContext";
+import { apiFetch } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
 
 const MMR_EVOLUCION = [980, 1020, 1005, 1080, 1120, 1190, 1248];
 const SEMANAS       = ["S1","S2","S3","S4","S5","S6","S7"];
+
+const NIVEL_LABEL: Record<string, string> = {
+  primera:     "1ra Categoría",
+  segunda:     "2da Categoría",
+  tercera:     "3ra Categoría",
+  cuarta:      "4ta Categoría",
+  quinta:      "5ta Categoría",
+  sexta:       "6ta Categoría",
+  septima_mas: "7ma+ Categoría",
+};
 
 // Historial solo para el usuario demo (id=1 = Felipe)
 // Un usuario nuevo no tendrá entradas aquí → array vacío → estado vacío
@@ -15,9 +27,20 @@ const PARTIDOS_MOCK: Record<number, { rival: string; resultado: string; mmr: num
   ],
 };
 
+interface RankingStats { ranking_position: number; total_in_zone: number; mmr_variation_30d: number; }
+
 export default function Perfil() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [rankingStats, setRankingStats] = useState<RankingStats | null>(null);
+
+  useEffect(() => {
+    if (!user?.rut) return;
+    apiFetch<{ stats: RankingStats }>(`/api/users/${user.rut}/profile`)
+      .then((d) => setRankingStats(d.stats))
+      .catch(() => {});
+  }, [user?.rut]);
 
   const initiales = user?.nombre
     ? user.nombre.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
@@ -46,7 +69,7 @@ export default function Perfil() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "20px 20px 16px",
         }}>
-          <button className="ph-back-btn" onClick={() => navigate(-1)}>←</button>
+          <button className="ph-back-btn" onClick={() => navigate("/home", { replace: true })}>←</button>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700 }}>Mi perfil</div>
           <button
             onClick={handleLogout}
@@ -69,9 +92,12 @@ export default function Perfil() {
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
             <div
               className="ph-avatar"
-              style={{ width: 64, height: 64, fontSize: 22, background: "var(--accent)", borderRadius: 20, flexShrink: 0 }}
+              style={{ width: 64, height: 64, fontSize: 22, background: "var(--accent)", borderRadius: 20, flexShrink: 0, overflow: "hidden" }}
             >
-              {initiales}
+              {user?.photo_url
+                ? <img src={user.photo_url} alt={user.nombre} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+                : initiales
+              }
             </div>
             <div>
               <div style={{
@@ -87,7 +113,7 @@ export default function Perfil() {
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {user?.nivel
-                  ? <span className="ph-pill ph-pill-purple">{user.nivel}{user.categoria ? ` · ${user.categoria}` : ""}</span>
+                  ? <span className="ph-pill ph-pill-green">{NIVEL_LABEL[user.nivel] ?? user.nivel}</span>
                   : <span className="ph-pill ph-pill-gray">Sin categoría aún</span>
                 }
                 {!esNuevo && (
@@ -117,12 +143,19 @@ export default function Perfil() {
               <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
                 {esNuevo
                   ? "Juega partidos para obtener ranking"
-                  : `#14 en ${user?.zona ?? "tu zona"}`}
+                  : rankingStats
+                    ? `#${rankingStats.ranking_position} en ${user?.zona ?? "tu zona"} (de ${rankingStats.total_in_zone})`
+                    : `— en ${user?.zona ?? "tu zona"}`}
               </div>
             </div>
-            {!esNuevo && (
+            {!esNuevo && rankingStats && (
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 13, color: "#4ade80", fontWeight: 600 }}>▲ +127</div>
+                <div style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: rankingStats.mmr_variation_30d >= 0 ? "#4ade80" : "#fca5a5",
+                }}>
+                  {rankingStats.mmr_variation_30d >= 0 ? "▲" : "▼"} {rankingStats.mmr_variation_30d >= 0 ? "+" : ""}{rankingStats.mmr_variation_30d}
+                </div>
                 <div style={{ fontSize: 11, color: "var(--text2)" }}>último mes</div>
               </div>
             )}
@@ -171,7 +204,7 @@ export default function Perfil() {
                     <div style={{
                       width: "100%",
                       height: `${(v / maxMMR) * 100}%`,
-                      background: i === MMR_EVOLUCION.length - 1 ? "var(--accent)" : "rgba(79,70,229,0.35)",
+                      background: i === MMR_EVOLUCION.length - 1 ? "var(--accent)" : "rgba(132,204,22,0.3)",
                       borderRadius: "4px 4px 0 0",
                     }} />
                     <span style={{ fontSize: 10, color: "var(--text2)" }}>{SEMANAS[i]}</span>
