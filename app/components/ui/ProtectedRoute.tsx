@@ -7,12 +7,17 @@ interface Props {
 }
 
 const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
+const ADMIN_ROUTES  = ["/admin", "/admin/login"];
 
 export default function ProtectedRoute({ children }: Props) {
   const { isLogged, loading } = useAuth();
   const location = useLocation();
 
   const isPublic = PUBLIC_ROUTES.includes(location.pathname);
+  const isAdmin  = ADMIN_ROUTES.some((r) => location.pathname.startsWith(r));
+
+  // Las rutas /admin/* tienen su propio guard (AdminRoute) — no aplicar auth de jugador
+  if (isAdmin) return <>{children}</>;
 
   if (loading) {
     const hasSession = isAuthenticated();

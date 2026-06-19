@@ -28,17 +28,32 @@ const PARTIDOS_MOCK: Record<number, { rival: string; resultado: string; mmr: num
 };
 
 interface RankingStats { ranking_position: number; total_in_zone: number; mmr_variation_30d: number; }
+interface PlayerRatings { avg_fair_play: number | null; avg_punctuality: number | null; avg_skill_level: number | null; total: number; }
+
+function StarDisplay({ value }: { value: number | null }) {
+  if (value === null) return <span style={{ color: "var(--text2)", fontSize: 12 }}>—</span>;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <span style={{ color: "#facc15", fontSize: 14 }}>★</span>
+      <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 800 }}>{value.toFixed(1)}</span>
+    </div>
+  );
+}
 
 export default function Perfil() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [rankingStats, setRankingStats] = useState<RankingStats | null>(null);
+  const [rankingStats,   setRankingStats]   = useState<RankingStats | null>(null);
+  const [playerRatings,  setPlayerRatings]  = useState<PlayerRatings | null>(null);
 
   useEffect(() => {
     if (!user?.rut) return;
     apiFetch<{ stats: RankingStats }>(`/api/users/${user.rut}/profile`)
       .then((d) => setRankingStats(d.stats))
+      .catch(() => {});
+    apiFetch<{ ratings: PlayerRatings }>(`/api/users/${user.rut}/ratings`)
+      .then((d) => setPlayerRatings(d.ratings))
       .catch(() => {});
   }, [user?.rut]);
 
@@ -166,7 +181,7 @@ export default function Perfil() {
             {[
               { val: esNuevo ? "0" : String(numPartidos), label: "Partidos"  },
               { val: esNuevo ? "—" : `${pctVictorias}%`, label: "Victorias" },
-              { val: esNuevo ? "—" : "4.8",              label: "Fair Play" },
+              { val: esNuevo || !playerRatings?.avg_fair_play ? "—" : playerRatings.avg_fair_play.toFixed(1), label: "Fair Play" },
             ].map((s) => (
               <div key={s.label} className="ph-card" style={{ textAlign: "center", padding: "14px 8px" }}>
                 <div style={{
@@ -182,10 +197,43 @@ export default function Perfil() {
             ))}
           </div>
 
+          {/* ── Reputación ── */}
+          {(playerRatings?.total ?? 0) > 0 && (
+            <div className="ph-card" style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12 }}>
+                Reputación · {playerRatings!.total} valoraciones
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                {[
+                  { label: "Fair Play",   val: playerRatings!.avg_fair_play   },
+                  { label: "Puntualidad", val: playerRatings!.avg_punctuality },
+                  { label: "Nivel",       val: playerRatings!.avg_skill_level },
+                ].map(({ label, val }) => (
+                  <div key={label} style={{ textAlign: "center" }}>
+                    <StarDisplay value={val} />
+                    <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── Evolución MMR ── */}
           <div className="ph-card" style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 14 }}>
-              Evolución MMR — Últimas 7 semanas
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                Evolución MMR — Últimas 7 semanas
+              </div>
+              {!esNuevo && (
+                <span
+                  onClick={() => navigate("/perfil/mmr-historial")}
+                  style={{ fontSize: 11, color: "var(--accent)", cursor: "pointer", textDecoration: "underline" }}
+                >
+                  Ver historial →
+                </span>
+              )}
             </div>
             {esNuevo ? (
               <div style={{

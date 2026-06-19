@@ -4,7 +4,10 @@ import { useAuth } from "~/context/AuthContext";
 import NavBar from "~/components/ui/NavBar";
 import { getRanking, type RankingEntry } from "~/services/matches";
 
-const ZONAS = ["Valparaíso", "Viña del Mar", "Quilpué", "Concón", "Santiago"];
+const ZONAS = [
+  "Valparaíso","Viña del Mar","Quilpué","Villa Alemana",
+  "Concón","Santiago Centro","Providencia","Las Condes",
+];
 const MEDAL = ["🥇", "🥈", "🥉"];
 
 const AVATAR_COLORS = [
@@ -65,7 +68,7 @@ export default function Ranking() {
               <div style={{ position: "absolute", top: "110%", right: 0, zIndex: 10, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, minWidth: 140, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
                 {ZONAS.map((z) => (
                   <button key={z} onClick={() => { setZona(z); setShowZonas(false); }}
-                    style={{ width: "100%", padding: "10px 14px", background: z === zona ? "rgba(79,70,229,0.1)" : "transparent", border: "none", borderBottom: "1px solid var(--border)", color: z === zona ? "var(--accent)" : "var(--text)", fontFamily: "var(--font-body)", fontSize: 13, textAlign: "left", cursor: "pointer" }}>
+                    style={{ width: "100%", padding: "10px 14px", background: z === zona ? "rgba(132,204,22,0.1)" : "transparent", border: "none", borderBottom: "1px solid var(--border)", color: z === zona ? "var(--accent)" : "var(--text)", fontFamily: "var(--font-body)", fontSize: 13, textAlign: "left", cursor: "pointer" }}>
                     {z}
                   </button>
                 ))}
@@ -126,7 +129,7 @@ export default function Ranking() {
               {lista.map((j, i) => {
                 const isMe = j.id === user?.id;
                 return (
-                  <div key={j.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: i < lista.length - 1 ? "1px solid var(--border)" : "none", background: isMe ? "rgba(79,70,229,0.05)" : "transparent", borderRadius: isMe ? 8 : 0 }}>
+                  <div key={j.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: i < lista.length - 1 ? "1px solid var(--border)" : "none", background: isMe ? "rgba(132,204,22,0.07)" : "transparent", borderRadius: isMe ? 8 : 0 }}>
                     <span style={{ width: 22, fontSize: 13, color: "var(--text2)", fontWeight: 600, textAlign: "center" }}>
                       {j.position}
                     </span>

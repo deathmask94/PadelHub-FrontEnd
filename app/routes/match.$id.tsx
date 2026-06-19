@@ -27,9 +27,28 @@ interface MatchDetail {
   id: string; club: string; format: string; status: string;
   match_date: string; match_time: string; ends_at?: string;
   organizer_id: string; is_organizer: boolean; my_status: string | null;
-  max_players: number;
+  max_players: number; can_rate: boolean; has_rated: boolean;
   users: PlayerUser;
   match_players: MatchPlayer[];
+}
+
+type RatingValues = { fair_play: number; punctuality: number; skill_level: number };
+
+function StarRating({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ fontSize: 10, color: "var(--text2)", marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+      <div style={{ display: "flex", gap: 1 }}>
+        {[1,2,3,4,5].map((n) => (
+          <button key={n} onClick={() => onChange(n)} style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 20, lineHeight: 1, padding: "0 1px",
+            color: n <= value ? "#facc15" : "var(--border)",
+          }}>★</button>
+        ))}
+      </div>
+    </div>
+  );
 }
 interface SearchUser { id: string; name: string; photo_url: string | null; level: string; mmr: number; zone: string; }
 
@@ -84,6 +103,11 @@ export default function MatchDetail() {
   const [confirmCancel,  setConfirmCancel]  = useState(false);
   const [confirmLeave,   setConfirmLeave]   = useState(false);
   const [actioning,      setActioning]      = useState(false);
+
+  // Valoraciones
+  const [ratings,         setRatings]         = useState<Record<string, RatingValues>>({});
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [ratingDone,       setRatingDone]       = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
@@ -656,6 +680,102 @@ export default function MatchDetail() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Valorar jugadores ── */}
+          {match.status === "finished" && !ratingDone && (match.can_rate || match.has_rated) && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+                Valorar compañeros y rivales
+              </div>
+
+              {match.has_rated ? (
+                <div style={{
+                  background: "rgba(132,204,22,0.08)", border: "1px solid var(--border2)",
+                  borderRadius: 12, padding: "14px 16px", fontSize: 13, color: "var(--accent)",
+                }}>
+                  ✓ Ya enviaste tus valoraciones para este partido.
+                </div>
+              ) : (() => {
+                const toRate = [
+                  ...(match.is_organizer ? [] : [match.users]),
+                  ...match.match_players
+                    .filter((mp) => mp.status === "confirmed" && mp.users.id !== user?.id)
+                    .map((mp) => mp.users),
+                ].filter((p) => p.id !== user?.id);
+
+                const setRating = (playerId: string, field: keyof RatingValues, value: number) =>
+                  setRatings((prev) => ({
+                    ...prev,
+                    [playerId]: { fair_play: 3, punctuality: 3, skill_level: 3, ...prev[playerId], [field]: value },
+                  }));
+
+                const allRated = toRate.length > 0 && toRate.every((p) => ratings[p.id]);
+
+                const handleSubmitRatings = async () => {
+                  setSubmittingRating(true);
+                  try {
+                    await apiFetch(`/api/matches/${id}/rate`, {
+                      method: "POST",
+                      body: JSON.stringify({
+                        ratings: toRate.map((p) => ({
+                          rated_id:    p.id,
+                          fair_play:   ratings[p.id]?.fair_play   ?? 3,
+                          punctuality: ratings[p.id]?.punctuality ?? 3,
+                          skill_level: ratings[p.id]?.skill_level ?? 3,
+                        })),
+                      }),
+                    });
+                    setRatingDone(true);
+                    showToast("¡Valoraciones enviadas!");
+                  } catch (e: unknown) {
+                    showToast(e instanceof Error ? e.message : "Error al enviar valoraciones");
+                  } finally {
+                    setSubmittingRating(false);
+                  }
+                };
+
+                return (
+                  <div className="ph-card" style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>
+                      Valoración anónima · válida por 24 h tras finalizar
+                    </div>
+                    {toRate.map((p, i) => {
+                      const r = ratings[p.id] ?? { fair_play: 0, punctuality: 0, skill_level: 0 };
+                      return (
+                        <div key={p.id} style={{
+                          paddingBottom: 14, marginBottom: 14,
+                          borderBottom: i < toRate.length - 1 ? "1px solid var(--border)" : "none",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                            <Avatar user={p} size={30} />
+                            <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 10 }}>
+                            <StarRating label="Fair play"   value={r.fair_play}   onChange={(v) => setRating(p.id, "fair_play", v)} />
+                            <StarRating label="Puntualidad" value={r.punctuality} onChange={(v) => setRating(p.id, "punctuality", v)} />
+                            <StarRating label="Nivel"       value={r.skill_level} onChange={(v) => setRating(p.id, "skill_level", v)} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <button
+                      className="ph-btn"
+                      onClick={handleSubmitRatings}
+                      disabled={submittingRating || !allRated}
+                      style={{ marginTop: 4 }}
+                    >
+                      {submittingRating ? "Enviando…" : "Enviar valoraciones"}
+                    </button>
+                    {!allRated && (
+                      <div style={{ fontSize: 11, color: "var(--text2)", textAlign: "center", marginTop: 8 }}>
+                        Selecciona al menos 1 estrella por jugador y dimensión
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

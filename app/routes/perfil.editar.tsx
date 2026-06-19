@@ -30,6 +30,7 @@ export default function EditarPerfilPage() {
     nivel:  user?.nivel  || "",
     zona:   user?.zona   || "",
   });
+  const [reminderEnabled, setReminderEnabled] = useState(true);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState("");
   const [success,      setSuccess]      = useState(false);
@@ -73,10 +74,11 @@ export default function EditarPerfilPage() {
         setPhotoFile(null);
       }
       await editarPerfil({
-        nombre: form.nombre,
-        zona:   form.zona,
-        nivel:  form.nivel,
-        edad:   form.edad ? parseInt(form.edad) : undefined,
+        nombre:           form.nombre,
+        zona:             form.zona,
+        nivel:            form.nivel,
+        edad:             form.edad ? parseInt(form.edad) : undefined,
+        reminder_enabled: reminderEnabled,
       });
       setSuccess(true);
       setTimeout(() => navigate("/perfil", { replace: true }), 1800);
@@ -193,6 +195,35 @@ export default function EditarPerfilPage() {
                 {label}
               </button>
             ))}
+          </div>
+
+          {/* Toggle recordatorios */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "var(--bg3)", border: "1px solid var(--border)",
+            borderRadius: 12, padding: "14px 16px", marginBottom: 16,
+          }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Recordatorios de partido</div>
+              <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>
+                Email 24 h y 1 h antes del partido
+              </div>
+            </div>
+            <button
+              onClick={() => setReminderEnabled((v) => !v)}
+              style={{
+                width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
+                background: reminderEnabled ? "var(--accent)" : "var(--border)",
+                position: "relative", transition: "background 0.2s", flexShrink: 0,
+              }}
+            >
+              <span style={{
+                position: "absolute", top: 3,
+                left: reminderEnabled ? 22 : 3,
+                width: 18, height: 18, borderRadius: "50%",
+                background: "#fff", transition: "left 0.2s",
+              }} />
+            </button>
           </div>
 
           <button className="ph-btn fade-up-3" onClick={handleSave} disabled={loading || uploadingPhoto} style={{ marginTop: 8 }}>
