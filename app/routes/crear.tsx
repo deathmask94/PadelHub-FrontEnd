@@ -1,8 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
+import { apiFetch } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
 import { createMatch } from "~/services/matches";
+
+interface PlayerOption {
+  id: string;
+  name: string;
+  photo_url: string | null;
+  level: string;
+  mmr: number;
+}
+
+const AVATAR_COLORS = ["#059669","#d97706","#7c3aed","#db2777","#0284c7","#b45309","#16a34a","#dc2626"];
+function avatarColor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+}
 
 const CLUBS = [
   { nombre: "Viña Pádel Club",         abre: "09:00", cierra: "22:30" },
@@ -41,12 +60,6 @@ function formatDateStr(d: Date) {
   return `${DIAS_ES[d.getDay()]} ${d.getDate()} ${MESES_ES[d.getMonth()]}`;
 }
 
-const JUGADORES_MOCK = [
-  { id: 2, ini: "MR", nombre: "Miguel R.",  color: "#059669" },
-  { id: 3, ini: "AP", nombre: "Ana P.",     color: "#d97706" },
-  { id: 4, ini: "JV", nombre: "Javier V.",  color: "#7c3aed" },
-  { id: 5, ini: "RP", nombre: "Roberto P.", color: "#db2777" },
-];
 
 export default function CrearPartido() {
   const { user } = useAuth();
@@ -67,8 +80,11 @@ export default function CrearPartido() {
   const [showTime,       setShowTime]       = useState(false);
 
   const [formato,        setFormato]        = useState<"dobles"|"individual">("dobles");
-  const [jugadores,      setJugadores]      = useState<(typeof JUGADORES_MOCK[0]|null)[]>([null,null,null]);
+  const [jugadores,      setJugadores]      = useState<(PlayerOption|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
+  const [pickerSearch,   setPickerSearch]   = useState("");
+  const [pickerPlayers,  setPickerPlayers]  = useState<PlayerOption[]>([]);
+  const [pickerLoading,  setPickerLoading]  = useState(false);
 
   const [toast,          setToast]          = useState("");
   const [saving,         setSaving]         = useState(false);
@@ -95,7 +111,33 @@ export default function CrearPartido() {
   const numSlots = formato === "dobles" ? 3 : 1;
   const slots    = jugadores.slice(0, numSlots);
 
-  const toggleJugador = (idx: number, j: typeof JUGADORES_MOCK[0]|null) => {
+  const fetchPickerPlayers = useCallback(async (q: string) => {
+    setPickerLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (q.length >= 2) params.set("q", q);
+      const data = await apiFetch<PlayerOption[]>(`/api/users/search?${params.toString()}`);
+      setPickerPlayers(data);
+    } catch {
+      setPickerPlayers([]);
+    } finally {
+      setPickerLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showPickerIdx === null) { setPickerSearch(""); return; }
+    fetchPickerPlayers("");
+  }, [showPickerIdx, fetchPickerPlayers]);
+
+  useEffect(() => {
+    if (showPickerIdx === null) return;
+    if (pickerSearch.length > 0 && pickerSearch.length < 2) return;
+    const t = setTimeout(() => fetchPickerPlayers(pickerSearch), 300);
+    return () => clearTimeout(t);
+  }, [pickerSearch, showPickerIdx, fetchPickerPlayers]);
+
+  const toggleJugador = (idx: number, j: PlayerOption | null) => {
     const next = [...jugadores];
     next[idx] = next[idx]?.id === j?.id ? null : j;
     setJugadores(next);
@@ -327,8 +369,13 @@ export default function CrearPartido() {
                   >
                     {j ? (
                       <>
-                        <div className="ph-avatar" style={{ width:36, height:36, fontSize:13, background:j.color }}>{j.ini}</div>
-                        <span style={{ fontSize:11, color:"var(--text2)" }}>{j.nombre.split(" ")[0]}</span>
+                        <div className="ph-avatar" style={{ width:36, height:36, fontSize:13, background: j.photo_url ? "transparent" : avatarColor(j.id) }}>
+                          {j.photo_url
+                            ? <img src={j.photo_url} alt={j.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"inherit" }} />
+                            : initials(j.name)
+                          }
+                        </div>
+                        <span style={{ fontSize:11, color:"var(--text2)" }}>{j.name.split(" ")[0]}</span>
                       </>
                     ) : (
                       <>
@@ -341,26 +388,56 @@ export default function CrearPartido() {
                     <div style={{
                       position:"absolute", top:"110%", left:0, zIndex:10,
                       background:"var(--bg3)", border:"1px solid var(--border)",
-                      borderRadius:12, minWidth:160, overflow:"hidden",
+                      borderRadius:12, minWidth:220, overflow:"hidden",
                       boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
                     }}>
-                      {JUGADORES_MOCK.filter(jm=>!slots.some((s,si)=>si!==idx&&s?.id===jm.id)).map(jm=>(
-                        <button key={jm.id} onClick={()=>toggleJugador(idx,jm)}
-                          style={{
-                            width:"100%", padding:"10px 14px",
-                            background: slots[idx]?.id===jm.id?"rgba(79,70,229,0.1)":"transparent",
-                            border:"none", borderBottom:"1px solid var(--border)",
-                            display:"flex", alignItems:"center", gap:8,
-                            cursor:"pointer", color:"var(--text)", fontFamily:"var(--font-body)", fontSize:13,
-                          }}>
-                          <div className="ph-avatar" style={{ width:28, height:28, fontSize:11, background:jm.color }}>{jm.ini}</div>
-                          {jm.nombre}
-                        </button>
-                      ))}
+                      {/* Búsqueda */}
+                      <div style={{ padding:"8px 10px", borderBottom:"1px solid var(--border)" }}>
+                        <input
+                          autoFocus
+                          className="ph-input"
+                          placeholder="Buscar jugador…"
+                          value={pickerSearch}
+                          onChange={(e) => setPickerSearch(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ fontSize:13, padding:"6px 10px" }}
+                        />
+                      </div>
+                      {/* Lista */}
+                      <div style={{ maxHeight:200, overflowY:"auto" }}>
+                        {pickerLoading ? (
+                          <div style={{ padding:"14px", textAlign:"center", fontSize:12, color:"var(--text2)" }}>Buscando…</div>
+                        ) : pickerPlayers.filter(p => !slots.some((s,si) => si!==idx && s?.id===p.id)).length === 0 ? (
+                          <div style={{ padding:"14px", textAlign:"center", fontSize:12, color:"var(--text2)" }}>Sin resultados</div>
+                        ) : pickerPlayers
+                            .filter(p => !slots.some((s,si) => si!==idx && s?.id===p.id))
+                            .map(p => (
+                          <button key={p.id} onClick={() => toggleJugador(idx, p)}
+                            style={{
+                              width:"100%", padding:"10px 14px",
+                              background: slots[idx]?.id===p.id ? "rgba(132,204,22,0.1)" : "transparent",
+                              border:"none", borderBottom:"1px solid var(--border)",
+                              display:"flex", alignItems:"center", gap:8,
+                              cursor:"pointer", color:"var(--text)", fontFamily:"var(--font-body)", fontSize:13, textAlign:"left",
+                            }}>
+                            <div className="ph-avatar" style={{ width:30, height:30, fontSize:11, flexShrink:0,
+                              background: p.photo_url ? "transparent" : avatarColor(p.id) }}>
+                              {p.photo_url
+                                ? <img src={p.photo_url} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"inherit" }} />
+                                : initials(p.name)
+                              }
+                            </div>
+                            <div>
+                              <div style={{ fontWeight:600 }}>{p.name}</div>
+                              <div style={{ fontSize:11, color:"var(--text2)" }}>{p.mmr} MMR</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                       {j && (
-                        <button onClick={()=>toggleJugador(idx,null)}
-                          style={{ width:"100%", padding:"10px 14px", background:"transparent", border:"none", cursor:"pointer", color:"var(--red)", fontFamily:"var(--font-body)", fontSize:13, textAlign:"left" }}>
-                          ✕ Quitar
+                        <button onClick={() => toggleJugador(idx, null)}
+                          style={{ width:"100%", padding:"10px 14px", background:"transparent", border:"none", borderTop:"1px solid var(--border)", cursor:"pointer", color:"#ef4444", fontFamily:"var(--font-body)", fontSize:13, textAlign:"left" }}>
+                          ✕ Quitar jugador
                         </button>
                       )}
                     </div>
