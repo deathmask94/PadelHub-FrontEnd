@@ -32,7 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
         zIndex: 9999, display: "flex", fontFamily: "'DM Sans', sans-serif",
-        background: "#131620",
+        background: "#f1f5f9",
       }}>
 
         {/* ── Sidebar ─────────────────────────────────────────── */}
@@ -142,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* ── Main content ────────────────────────────────────── */}
         <main style={{
           flex: 1, overflowY: "auto",
-          background: "#131620",
+          background: "#f1f5f9",
         }}>
           {children}
         </main>
