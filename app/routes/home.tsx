@@ -28,7 +28,7 @@ function formatTime(timeStr: string): string {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  open: "Abierto", confirmed: "Confirmado",
+  open: "Abierto", confirmed: "En curso",
   in_progress: "En curso", finished: "Finalizado", cancelled: "Cancelado",
 };
 
@@ -95,9 +95,10 @@ export default function Home() {
     navigate("/login", { replace: true });
   };
 
-  const proximoPartido = matches.find(
-    (m) => m.status === "open" || m.status === "confirmed"
-  ) ?? null;
+  const proximoPartido =
+    myMatches.find((m) => m.status === "open" || m.status === "confirmed") ??
+    matches.find((m) => m.status === "open" || m.status === "confirmed") ??
+    null;
 
   return (
     <div className="ph-screen">
