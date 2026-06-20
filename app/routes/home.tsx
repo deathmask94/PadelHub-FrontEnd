@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
+import { apiFetch } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
-import { getMatches, getMyMatches, joinMatch, respondInvitation, type Match, type MatchFilters } from "~/services/matches";
+import { getMatches, getMyMatches, respondInvitation, type Match, type MatchFilters } from "~/services/matches";
 
 const DIAS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -21,9 +22,9 @@ function formatMatchDate(dateStr: string): string {
 }
 
 function formatTime(timeStr: string): string {
-  return new Date(timeStr).toLocaleTimeString("es-CL", {
-    hour: "2-digit", minute: "2-digit", hour12: false,
-  });
+  if (!timeStr) return "";
+  const d = new Date(timeStr);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -45,9 +46,15 @@ export default function Home() {
   const [loadingM,     setLoadingM]     = useState(true);
   const [errorM,       setErrorM]       = useState("");
   const [activeTab,    setActiveTab]    = useState<'all' | 'mine'>('all');
-  const [joiningId,    setJoiningId]    = useState<string | null>(null);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [filters,      setFilters]      = useState<MatchFilters>({ zone: "", format: undefined, date: undefined });
+  const [unread,       setUnread]       = useState(0);
+
+  useEffect(() => {
+    apiFetch<{ unread_count: number }>("/api/notifications")
+      .then((d) => setUnread(d.unread_count))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const activeFilters: MatchFilters = {
@@ -70,13 +77,6 @@ export default function Home() {
     };
     const [all, mine] = await Promise.all([getMatches(activeFilters), getMyMatches()]);
     setMatches(all); setMyMatches(mine);
-  };
-
-  const handleJoin = async (matchId: string) => {
-    setJoiningId(matchId);
-    try { await joinMatch(matchId); await reload(); }
-    catch (e: unknown) { setErrorM(e instanceof Error ? e.message : 'Error al unirse'); }
-    finally { setJoiningId(null); }
   };
 
   const handleRespond = async (matchId: string, accept: boolean) => {
@@ -113,20 +113,44 @@ export default function Home() {
               {user?.zona ? `${user.zona} · ` : ""}MMR {user?.mmr ?? 1000}
             </div>
           </div>
-          <button
-            onClick={() => navigate("/perfil")}
-            style={{
-              width: 44, height: 44, background: "var(--accent)", borderRadius: 14,
-              border: "none", cursor: "pointer", overflow: "hidden",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#fff",
-            }}
-          >
-            {user?.photo_url
-              ? <img src={user.photo_url} alt={user.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : initiales
-            }
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Campana notificaciones */}
+            <button
+              onClick={() => navigate("/notificaciones")}
+              style={{
+                position: "relative", background: "var(--bg3)", border: "1px solid var(--border)",
+                borderRadius: 12, width: 40, height: 40, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+              }}
+            >
+              🔔
+              {unread > 0 && (
+                <span style={{
+                  position: "absolute", top: -4, right: -4,
+                  background: "#ef4444", color: "#fff", borderRadius: "50%",
+                  minWidth: 16, height: 16, fontSize: 9, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center", padding: "0 2px",
+                }}>
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </button>
+            {/* Avatar perfil */}
+            <button
+              onClick={() => navigate("/perfil")}
+              style={{
+                width: 44, height: 44, background: "var(--accent)", borderRadius: 14,
+                border: "none", cursor: "pointer", overflow: "hidden",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#fff",
+              }}
+            >
+              {user?.photo_url
+                ? <img src={user.photo_url} alt={user.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : initiales
+              }
+            </button>
+          </div>
         </div>
 
         {/* ── MMR card ── */}
@@ -342,7 +366,7 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Fila 4: slots + botón */}
+                    {/* Fila 4: slots + estado */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         {Array.from({ length: total }).map((_, i) => (
@@ -355,22 +379,10 @@ export default function Home() {
                           {filled}/{total}
                         </span>
                       </div>
-                      {!isOrganizer ? (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleJoin(m.id); }}
-                          disabled={isJoining}
-                          style={{
-                            padding: "6px 14px", borderRadius: 8, border: "none",
-                            background: "rgba(132,204,22,0.12)", color: "var(--accent)",
-                            fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
-                            cursor: isJoining ? "default" : "pointer",
-                          }}
-                        >
-                          {isJoining ? "…" : "Unirse"}
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: 11, color: "var(--accent)" }}>Ver detalle →</span>
-                      )}
+                      {isOrganizer
+                        ? <span style={{ fontSize: 11, color: "var(--accent)" }}>Tu partido →</span>
+                        : <span style={{ fontSize: 11, color: "var(--text2)", background: "var(--bg3)", padding: "4px 10px", borderRadius: 8 }}>Solo por invitación</span>
+                      }
                     </div>
                   </div>
                 );

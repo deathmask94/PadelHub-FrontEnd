@@ -121,7 +121,10 @@ export default function CrearPartido() {
 
     setSaving(true);
     try {
-      const matchDate = selectedDate.toISOString().split("T")[0];
+      const y  = selectedDate.getFullYear();
+      const mo = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const d  = String(selectedDate.getDate()).padStart(2, "0");
+      const matchDate = `${y}-${mo}-${d}`;
       const matchTime = `${matchDate}T${selectedTime}:00`;
 
       await createMatch({
