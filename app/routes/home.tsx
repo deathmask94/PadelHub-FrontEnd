@@ -324,7 +324,7 @@ export default function Home() {
             ) : (
               matches.slice(0, 10).map((m) => {
                 const isOrganizer = m.organizer_id === user?.id;
-                const isJoining   = joiningId === m.id;
+                const isJoining   = false;
                 const total       = m.max_players ?? (m.format === "doubles" ? 4 : 2);
                 const filled      = m.player_count ?? 1;
                 return (

@@ -74,11 +74,12 @@ export default function Matchmaking() {
   const [showAllSug,     setShowAllSug]     = useState(false);
 
   // ── Búsqueda manual ──
-  const [zone,     setZone]     = useState(user?.zona ?? "");
-  const [mmrRange, setMmrRange] = useState(0);
-  const [searchQ,  setSearchQ]  = useState("");
-  const [rivals,   setRivals]   = useState<Rival[]>([]);
-  const [loading,  setLoading]  = useState(false);
+  const [zone,       setZone]       = useState(user?.zona ?? "");
+  const [mmrRange,   setMmrRange]   = useState(0);
+  const [searchQ,    setSearchQ]    = useState("");
+  const [rivals,     setRivals]     = useState<Rival[]>([]);
+  const [loading,    setLoading]    = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   // ── Desafío ──
   const [challengeId,  setChallengeId]  = useState<string | null>(null);
@@ -110,7 +111,7 @@ export default function Matchmaking() {
 
   // ── Búsqueda manual ──
   const fetchRivals = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setHasSearched(true);
     try {
       const params = new URLSearchParams();
       if (zone) params.set("zone", zone);
@@ -130,10 +131,11 @@ export default function Matchmaking() {
   }, [zone, mmrRange, searchQ, user?.mmr]);
 
   useEffect(() => {
+    if (!hasSearched) return;
     if (searchQ.length > 0 && searchQ.length < 2) return;
     const t = setTimeout(fetchRivals, searchQ.length >= 2 ? 400 : 0);
     return () => clearTimeout(t);
-  }, [fetchRivals, searchQ]);
+  }, [fetchRivals, searchQ, hasSearched]);
 
   const handleChallenge = async (rival: Rival | Suggestion) => {
     if (!user?.id || !clubInput.trim()) { showToast("Completa todos los campos"); return; }
@@ -351,16 +353,25 @@ export default function Matchmaking() {
 
           {/* ══ BÚSQUEDA POR NOMBRE ══ */}
           <input className="ph-input" type="text" placeholder="Buscar por nombre (opcional)…"
-            value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ marginBottom: 16 }} />
+            value={searchQ} onChange={(e) => setSearchQ(e.target.value)} style={{ marginBottom: 10 }} />
+
+          <button className="ph-btn" onClick={fetchRivals} style={{ marginBottom: 16 }}>
+            Buscar jugadores
+          </button>
 
           {/* ══ RESULTADOS BÚSQUEDA MANUAL ══ */}
-          {loading ? (
+          {!hasSearched ? (
+            <div className="ph-card" style={{ textAlign: "center", padding: "28px 16px" }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🔍</div>
+              <div style={{ fontSize: 13, color: "var(--text2)" }}>Ajusta los filtros y presiona "Buscar jugadores"</div>
+            </div>
+          ) : loading ? (
             <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text2)", fontSize: 14 }}>
               Buscando rivales…
             </div>
           ) : rivals.length === 0 ? (
             <div className="ph-card" style={{ textAlign: "center", padding: "36px 16px" }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>🔍</div>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>😕</div>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Sin resultados</div>
               <div style={{ fontSize: 13, color: "var(--text2)" }}>Prueba cambiando la zona o el rango de MMR</div>
             </div>

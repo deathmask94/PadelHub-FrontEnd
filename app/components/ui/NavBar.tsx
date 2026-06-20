@@ -1,6 +1,4 @@
 import { useNavigate, useLocation } from "react-router";
-import { useState, useEffect } from "react";
-import { apiFetch } from "~/services/auth";
 
 const NAV_ITEMS = [
   { label: "Inicio",   icon: "⌂",  path: "/home" },
@@ -13,13 +11,6 @@ const NAV_ITEMS = [
 export default function NavBar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [unread, setUnread] = useState(0);
-
-  useEffect(() => {
-    apiFetch<{ unread_count: number }>("/api/notifications")
-      .then((d) => setUnread(d.unread_count))
-      .catch(() => {});
-  }, [pathname]);
 
   return (
     <nav className="ph-nav">
@@ -63,58 +54,6 @@ export default function NavBar() {
         );
       })}
 
-      {/* Bell — notificaciones */}
-      <button
-        onClick={() => navigate("/notificaciones")}
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 4,
-          padding: "8px 4px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          borderRadius: 12,
-          transition: "all 0.2s",
-        }}
-      >
-        <span style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{
-            fontSize: 18,
-            color: pathname === "/notificaciones" ? "var(--accent)" : "var(--text2)",
-            lineHeight: 1,
-          }}>
-            🔔
-          </span>
-          {unread > 0 && (
-            <span style={{
-              position: "absolute",
-              top: -4, right: -6,
-              background: "#ef4444",
-              color: "#fff",
-              borderRadius: "50%",
-              minWidth: 16, height: 16,
-              fontSize: 9,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 700,
-              padding: "0 2px",
-              lineHeight: 1,
-            }}>
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </span>
-        <span style={{
-          fontSize: 10,
-          color: pathname === "/notificaciones" ? "var(--accent)" : "var(--text2)",
-          fontWeight: pathname === "/notificaciones" ? 600 : 400,
-          fontFamily: "var(--font-body)",
-        }}>
-          Alertas
-        </span>
-      </button>
     </nav>
   );
 }
