@@ -26,7 +26,6 @@ export default function EditarPerfilPage() {
 
   const [form, setForm] = useState({
     nombre: user?.nombre || "",
-    edad:   user?.edad?.toString() || "",
     nivel:  user?.nivel  || "",
     zona:   user?.zona   || "",
   });
@@ -77,7 +76,6 @@ export default function EditarPerfilPage() {
         nombre:           form.nombre,
         zona:             form.zona,
         nivel:            form.nivel,
-        edad:             form.edad ? parseInt(form.edad) : undefined,
         reminder_enabled: reminderEnabled,
       });
       setSuccess(true);
@@ -160,11 +158,16 @@ export default function EditarPerfilPage() {
               value={form.nombre} onChange={(e) => set("nombre", e.target.value)} />
           </div>
 
-          <div className="ph-input-group fade-up-1">
-            <label className="ph-label">Edad</label>
-            <input className="ph-input" type="number" placeholder="Tu edad" min={10} max={99}
-              value={form.edad} onChange={(e) => set("edad", e.target.value)} />
-          </div>
+          {user?.birth_date && (
+            <div className="ph-input-group fade-up-1">
+              <label className="ph-label">Fecha de nacimiento</label>
+              <div className="ph-input" style={{ color: "var(--text2)", background: "var(--bg3)", cursor: "not-allowed", display: "flex", alignItems: "center", gap: 8 }}>
+                <span>📅</span>
+                {new Date(user.birth_date).toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" })}
+                <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text2)" }}>No editable</span>
+              </div>
+            </div>
+          )}
 
           <div className="ph-input-group fade-up-1">
             <label className="ph-label">Zona</label>

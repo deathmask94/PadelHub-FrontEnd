@@ -21,7 +21,7 @@ export default function RegisterPage() {
     nombre:          "",
     rutBody:         "",
     rutDv:           "",
-    edad:            "",
+    fechaNacimiento: "",
     telefono:        "",
     email:           "",
     nivel:           "Principiante",
@@ -33,10 +33,18 @@ export default function RegisterPage() {
   const set = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
 
+  const MAX_BIRTH_DATE = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 10);
+    return d.toISOString().split("T")[0];
+  })();
+
   const handleNextStep = () => {
     setError("");
     if (!form.nombre.trim())                        return setError("Ingresa tu nombre completo.");
     if (!form.rutBody.trim() || !form.rutDv.trim()) return setError("Ingresa tu RUT completo.");
+    if (!form.fechaNacimiento)                      return setError("Ingresa tu fecha de nacimiento.");
+    if (form.fechaNacimiento > MAX_BIRTH_DATE)      return setError("Debes tener al menos 10 años.");
     if (!form.telefono.trim())                      return setError("Ingresa tu número de teléfono.");
     if (!form.email.trim())                         return setError("Ingresa tu correo electrónico.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError("El correo electrónico no es válido.");
@@ -54,13 +62,14 @@ export default function RegisterPage() {
     const start = Date.now();
     try {
       await register({
-        rut:      form.rutBody,
-        dv_rut:   form.rutDv.toUpperCase(),
-        phone:    form.telefono.replace(/\D/g, ""),
-        name:     form.nombre,
-        email:    form.email.toLowerCase().trim(),
-        password: form.password,
-        zone:     form.ciudad,
+        rut:        form.rutBody,
+        dv_rut:     form.rutDv.toUpperCase(),
+        phone:      form.telefono.replace(/\D/g, ""),
+        name:       form.nombre,
+        email:      form.email.toLowerCase().trim(),
+        password:   form.password,
+        zone:       form.ciudad,
+        birth_date: form.fechaNacimiento || undefined,
       });
       // Asegurar que la pantalla se vea al menos 2 segundos
       const elapsed = Date.now() - start;
@@ -153,8 +162,14 @@ export default function RegisterPage() {
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Edad</label>
-              <input className="ph-input" type="number" placeholder="Ej: 28" value={form.edad} onChange={(e) => set("edad", e.target.value)} />
+              <label className="ph-label">Fecha de nacimiento</label>
+              <input
+                className="ph-input"
+                type="date"
+                max={MAX_BIRTH_DATE}
+                value={form.fechaNacimiento}
+                onChange={(e) => set("fechaNacimiento", e.target.value)}
+              />
             </div>
 
             <div className="ph-input-group">

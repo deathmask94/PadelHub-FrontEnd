@@ -14,8 +14,7 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  // Campos adicionales guardados localmente
-  edad?: number | null;
+  birth_date?: string | null;
   categoria?: string;
 }
 
@@ -138,6 +137,7 @@ export async function registerUser(params: {
   email?: string;
   password: string;
   zone: string;
+  birth_date?: string;
 }): Promise<{ user: FrontendUser }> {
   const data = await apiFetch<{ user: User; token: string; refreshToken: string }>('/api/users', {
     method: 'POST',

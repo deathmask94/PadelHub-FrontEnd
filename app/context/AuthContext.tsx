@@ -30,6 +30,7 @@ interface AuthContextType {
     email?: string;
     password: string;
     zone: string;
+    birth_date?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
   editarPerfil: (data: Partial<FrontendUser>) => Promise<void>;
@@ -70,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email?: string;
     password: string;
     zone: string;
+    birth_date?: string;
   }) => {
     const { user } = await registerUser(data);
     setUser(user);
