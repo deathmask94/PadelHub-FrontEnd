@@ -348,7 +348,7 @@ export default function AdminUsuarioDetailPage() {
               {user.role !== "admin" && (
                 <div style={{
                   background: "var(--bg2)", border: `1px solid ${user.is_active ? "#ef4444" : "var(--border)"}`,
-                  borderRadius: 14, padding: "20px",
+                  borderRadius: 14, padding: "20px", marginBottom: 16,
                 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     ESTADO DE CUENTA
@@ -373,6 +373,7 @@ export default function AdminUsuarioDetailPage() {
                   </button>
                 </div>
               )}
+
             </>
           )}
         </main>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import AdminRoute from "~/components/ui/AdminRoute";
+import AdminLayout from "~/components/ui/AdminLayout";
 import { adminFetch } from "~/services/adminAuth";
 
 interface AdminMatch {
@@ -83,24 +83,12 @@ export default function AdminPartidosPage() {
   useEffect(() => { setPage(1); }, [q, zone, status, dateFrom, dateTo]);
 
   return (
-    <AdminRoute>
-      <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" }}>
-        {/* Navbar */}
-        <header style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "14px 24px", background: "var(--bg2)", borderBottom: "1px solid var(--border)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={() => navigate("/admin")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text2)", padding: 0 }}>
-              ←
-            </button>
-            <span style={{ fontWeight: 700, fontSize: 16 }}>Gestión de partidos</span>
-          </div>
-          {data && <span style={{ fontSize: 12, color: "var(--text2)" }}>{data.total} partidos</span>}
-        </header>
-
-        <main style={{ padding: "20px 48px" }}>
+    <AdminLayout>
+      <div style={{ padding: "24px 48px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Gestión de partidos</h1>
+          {data && <span style={{ fontSize: 13, color: "var(--text2)" }}>{data.total} partidos</span>}
+        </div>
           {/* Filtros */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto auto", gap: 10, marginBottom: 20 }}>
             <input style={inp} placeholder="Buscar por club..." value={q} onChange={(e) => setQ(e.target.value)} />
@@ -124,9 +112,8 @@ export default function AdminPartidosPage() {
             </div>
           )}
 
-          {loading ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: 60, fontSize: 14 }}>Cargando...</div>
-          ) : data?.matches.length === 0 ? (
+          <div style={{ opacity: loading ? 0.5 : 1, transition: "opacity 0.2s" }}>
+          {data?.matches.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text2)", padding: 60, fontSize: 14 }}>No se encontraron partidos con esos filtros.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -189,6 +176,7 @@ export default function AdminPartidosPage() {
               ))}
             </div>
           )}
+          </div>{/* /opacity wrapper */}
 
           {/* Paginación */}
           {data && data.totalPages > 1 && (
@@ -204,8 +192,7 @@ export default function AdminPartidosPage() {
               </button>
             </div>
           )}
-        </main>
       </div>
-    </AdminRoute>
+    </AdminLayout>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import AdminRoute from "~/components/ui/AdminRoute";
+import AdminLayout from "~/components/ui/AdminLayout";
 import { adminFetch, getAdminToken } from "~/services/adminAuth";
 
 interface LogEntry {
@@ -122,39 +122,14 @@ export default function AdminAuditoriaPage() {
   };
 
   return (
-    <AdminRoute>
-      <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" }}>
-
-        {/* Header */}
-        <header style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "14px 24px",
-          background: "var(--bg2)", borderBottom: "1px solid var(--border)",
-        }}>
-          <button
-            onClick={() => navigate("/admin")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text2)", padding: 0 }}
-          >
-            ←
+    <AdminLayout>
+      <div style={{ padding: "24px 48px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Log de auditoría</h1>
+          <button onClick={handleExport} disabled={exporting} style={{ background: "rgba(132,204,22,0.1)", border: "1px solid var(--accent)", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, color: "var(--accent)", cursor: exporting ? "not-allowed" : "pointer", opacity: exporting ? 0.6 : 1 }}>
+            {exporting ? "Exportando…" : "⬇ Exportar CSV"}
           </button>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>Log de auditoría</span>
-          <div style={{ marginLeft: "auto" }}>
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              style={{
-                background: "rgba(132,204,22,0.1)", border: "1px solid var(--accent)",
-                borderRadius: 8, padding: "7px 16px",
-                fontSize: 13, fontWeight: 600, color: "var(--accent)",
-                cursor: exporting ? "not-allowed" : "pointer",
-                opacity: exporting ? 0.6 : 1,
-              }}
-            >
-              {exporting ? "Exportando…" : "⬇ Exportar CSV"}
-            </button>
-          </div>
-        </header>
-
-        <main style={{ padding: "24px 48px" }}>
+        </div>
 
           {error && (
             <div style={{
@@ -230,11 +205,8 @@ export default function AdminAuditoriaPage() {
           )}
 
           {/* Tabla */}
-          {loading ? (
-            <div style={{ textAlign: "center", padding: 60, color: "var(--text2)", fontSize: 14 }}>
-              Cargando…
-            </div>
-          ) : data && data.logs.length === 0 ? (
+          <div style={{ opacity: loading ? 0.5 : 1, transition: "opacity 0.2s" }}>
+          {data && data.logs.length === 0 ? (
             <div style={{
               background: "var(--bg2)", border: "1px solid var(--border)",
               borderRadius: 12, padding: "40px", textAlign: "center", color: "var(--text2)", fontSize: 14,
@@ -304,6 +276,7 @@ export default function AdminAuditoriaPage() {
               ))}
             </div>
           )}
+          </div>{/* /opacity wrapper */}
 
           {/* Paginación */}
           {data && data.pages > 1 && (
@@ -343,8 +316,7 @@ export default function AdminAuditoriaPage() {
             </div>
           )}
 
-        </main>
       </div>
-    </AdminRoute>
+    </AdminLayout>
   );
 }

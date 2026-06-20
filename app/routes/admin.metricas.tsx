@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import AdminRoute from "~/components/ui/AdminRoute";
+import AdminLayout from "~/components/ui/AdminLayout";
 import { adminFetch } from "~/services/adminAuth";
 
 interface Metrics {
@@ -119,43 +119,17 @@ export default function AdminMetricasPage() {
     d.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   return (
-    <AdminRoute>
-      <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" }}>
-
-        {/* Header */}
-        <header style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "14px 24px",
-          background: "var(--bg2)", borderBottom: "1px solid var(--border)",
-        }}>
-          <button
-            onClick={() => navigate("/admin")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text2)", padding: 0 }}
-          >
-            ←
-          </button>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>Métricas de plataforma</span>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-            {lastUpd && (
-              <span style={{ fontSize: 11, color: "var(--text2)" }}>
-                Actualizado: {fmtTime(lastUpd)}
-              </span>
-            )}
-            <button
-              onClick={load}
-              disabled={loading}
-              style={{
-                background: "rgba(132,204,22,0.1)", border: "1px solid var(--accent)",
-                borderRadius: 8, padding: "6px 14px",
-                fontSize: 12, color: "var(--accent)", cursor: loading ? "not-allowed" : "pointer",
-                fontWeight: 600, opacity: loading ? 0.6 : 1,
-              }}
-            >
+    <AdminLayout>
+      <div style={{ padding: "24px 48px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Métricas de plataforma</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {lastUpd && <span style={{ fontSize: 11, color: "var(--text2)" }}>Actualizado: {fmtTime(lastUpd)}</span>}
+            <button onClick={load} disabled={loading} style={{ background: "rgba(132,204,22,0.1)", border: "1px solid var(--accent)", borderRadius: 8, padding: "6px 14px", fontSize: 12, color: "var(--accent)", cursor: loading ? "not-allowed" : "pointer", fontWeight: 600, opacity: loading ? 0.6 : 1 }}>
               {loading ? "Cargando…" : "↻ Actualizar"}
             </button>
           </div>
-        </header>
-
-        <main style={{ padding: "24px 48px" }}>
+        </div>
 
           {error && (
             <div style={{
@@ -166,16 +140,10 @@ export default function AdminMetricasPage() {
             </div>
           )}
 
-          {loading && !data && (
-            <div style={{ textAlign: "center", padding: 60, color: "var(--text2)", fontSize: 14 }}>
-              Cargando métricas…
-            </div>
-          )}
-
           {data && (
-            <>
+            <div style={{ opacity: loading ? 0.6 : 1, transition: "opacity 0.2s" }}>
               {/* Fila 1: stats rápidas */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 20 }}>
                 <StatCard
                   value={data.users.active}
                   label="Usuarios activos"
@@ -218,11 +186,10 @@ export default function AdminMetricasPage() {
                   color="#60a5fa"
                 />
               </div>
-            </>
+            </div>
           )}
 
-        </main>
       </div>
-    </AdminRoute>
+    </AdminLayout>
   );
 }

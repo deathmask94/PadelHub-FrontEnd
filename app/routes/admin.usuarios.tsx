@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import AdminRoute from "~/components/ui/AdminRoute";
+import AdminLayout from "~/components/ui/AdminLayout";
 import { adminFetch } from "~/services/adminAuth";
 
 interface AdminUser {
@@ -69,26 +69,12 @@ export default function AdminUsuariosPage() {
     name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <AdminRoute>
-      <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" }}>
-        {/* Navbar */}
-        <header style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "14px 24px", background: "var(--bg2)", borderBottom: "1px solid var(--border)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={() => navigate("/admin")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text2)", padding: 0 }}>
-              ←
-            </button>
-            <span style={{ fontWeight: 700, fontSize: 16 }}>Gestión de usuarios</span>
-          </div>
-          {data && (
-            <span style={{ fontSize: 12, color: "var(--text2)" }}>{data.total} usuarios</span>
-          )}
-        </header>
-
-        <main style={{ padding: "20px 48px" }}>
+    <AdminLayout>
+      <div style={{ padding: "24px 48px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Gestión de usuarios</h1>
+          {data && <span style={{ fontSize: 13, color: "var(--text2)" }}>{data.total} usuarios</span>}
+        </div>
           {/* Filtros */}
           <div style={{
             display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 10, marginBottom: 20,
@@ -127,11 +113,8 @@ export default function AdminUsuariosPage() {
           )}
 
           {/* Lista */}
-          {loading ? (
-            <div style={{ textAlign: "center", color: "var(--text2)", padding: 60, fontSize: 14 }}>
-              Cargando...
-            </div>
-          ) : data?.users.length === 0 ? (
+          <div style={{ opacity: loading ? 0.5 : 1, transition: "opacity 0.2s" }}>
+          {data?.users.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text2)", padding: 60, fontSize: 14 }}>
               No se encontraron usuarios con esos filtros.
             </div>
@@ -194,6 +177,7 @@ export default function AdminUsuariosPage() {
               ))}
             </div>
           )}
+          </div>{/* /opacity wrapper */}
 
           {/* Paginación */}
           {data && data.totalPages > 1 && (
@@ -231,8 +215,7 @@ export default function AdminUsuariosPage() {
               </button>
             </div>
           )}
-        </main>
       </div>
-    </AdminRoute>
+    </AdminLayout>
   );
 }

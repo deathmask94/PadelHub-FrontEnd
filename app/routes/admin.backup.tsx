@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import AdminRoute from "~/components/ui/AdminRoute";
+import AdminLayout from "~/components/ui/AdminLayout";
 import { getAdminToken } from "~/services/adminAuth";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -127,21 +127,9 @@ export default function AdminBackupPage() {
     : [];
 
   return (
-    <AdminRoute>
-      <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" }}>
-        {/* Navbar */}
-        <header style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "14px 24px",
-          background: "var(--bg2)", borderBottom: "1px solid var(--border)",
-        }}>
-          <button onClick={() => navigate("/admin")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--text2)", padding: 0 }}>
-            ←
-          </button>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>Respaldo de base de datos</span>
-        </header>
-
-        <main style={{ padding: "24px 48px", maxWidth: 1000, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+    <AdminLayout>
+      <div style={{ padding: "24px 48px", maxWidth: 1000 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 24px 0" }}>Respaldo de base de datos</h1>
 
           {/* ── SECCIÓN DESCARGA ── */}
           <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 14, padding: "22px 24px" }}>
@@ -318,8 +306,7 @@ export default function AdminBackupPage() {
               </div>
             )}
           </div>
-        </main>
       </div>
-    </AdminRoute>
+    </AdminLayout>
   );
 }
