@@ -1,7 +1,7 @@
 import { redirect } from "react-router";
 import { isAuthenticated } from "~/services/auth.mock";
 
-export function loader() {
+export function clientLoader() {
   if (isAuthenticated()) {
     return redirect("/home");
   }
