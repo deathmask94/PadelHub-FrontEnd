@@ -3,12 +3,15 @@ import { getStoredAdmin, clearAdminSession } from "~/services/adminAuth";
 import AdminRoute from "./AdminRoute";
 
 const NAV = [
-  { path: "/admin/usuarios",  label: "Usuarios",  icon: "👥" },
-  { path: "/admin/partidos",  label: "Partidos",  icon: "🏓" },
-  { path: "/admin/backup",    label: "Respaldo",  icon: "💾" },
-  { path: "/admin/metricas",  label: "Métricas",  icon: "📊" },
-  { path: "/admin/auditoria", label: "Auditoría", icon: "📋" },
+  { path: "/admin",           label: "Dashboard",  icon: "⊞",  exact: true },
+  { path: "/admin/usuarios",  label: "Usuarios",   icon: "👥" },
+  { path: "/admin/partidos",  label: "Partidos",   icon: "🏓" },
+  { path: "/admin/metricas",  label: "Métricas",   icon: "📊" },
+  { path: "/admin/auditoria", label: "Auditoría",  icon: "📋" },
+  { path: "/admin/backup",    label: "Respaldo",   icon: "💾" },
 ];
+
+const SIDEBAR_W = 220;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -20,106 +23,129 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     navigate("/admin/login", { replace: true });
   };
 
+  const isActive = (path: string, exact?: boolean) =>
+    exact ? location.pathname === path : location.pathname === path || location.pathname.startsWith(path + "/");
+
   return (
     <AdminRoute>
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, overflowY: "auto", background: "#0f1117", fontFamily: "var(--font-body)", display: "flex", flexDirection: "column" }}>
+      {/* Ocupa toda la pantalla, ignora el flex-center del root */}
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 9999, display: "flex", fontFamily: "'DM Sans', sans-serif",
+        background: "#131620",
+      }}>
 
-        {/* Top bar */}
-        <header style={{
-          display: "flex", alignItems: "center", gap: 0,
-          height: 56, padding: "0 32px",
-          background: "var(--bg2)", borderBottom: "2px solid var(--border)",
-          position: "sticky", top: 0, zIndex: 100,
+        {/* ── Sidebar ─────────────────────────────────────────── */}
+        <aside style={{
+          width: SIDEBAR_W, flexShrink: 0,
+          background: "#0c0e16",
+          borderRight: "1px solid #1e2130",
+          display: "flex", flexDirection: "column",
+          overflowY: "auto",
         }}>
-
           {/* Brand */}
           <div
             onClick={() => navigate("/admin")}
             style={{
-              display: "flex", alignItems: "center", gap: 8,
-              cursor: "pointer", marginRight: 40, userSelect: "none",
-              flexShrink: 0,
+              padding: "22px 20px 18px",
+              cursor: "pointer", userSelect: "none",
+              borderBottom: "1px solid #1e2130",
             }}
           >
-            <span style={{ fontSize: 20 }}>🛡️</span>
-            <span style={{ fontWeight: 800, fontSize: 16, color: "var(--accent)", letterSpacing: "-0.3px" }}>
-              PadelHub
-            </span>
-            <span style={{ fontWeight: 400, fontSize: 14, color: "var(--text2)", marginLeft: 2 }}>
-              Admin
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 22 }}>🛡️</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: "#84cc16", letterSpacing: "-0.3px" }}>
+                  PadelHub
+                </div>
+                <div style={{ fontSize: 11, color: "#4b5563", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Admin Panel
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Nav links */}
-          <nav style={{ display: "flex", gap: 2, flex: 1 }}>
-            {NAV.map(({ path, label, icon }) => {
-              const active = location.pathname === path || location.pathname.startsWith(path.replace(/s$/, '/'));
+          {/* Nav */}
+          <nav style={{ padding: "12px 10px", flex: 1 }}>
+            {NAV.map(({ path, label, icon, exact }) => {
+              const active = isActive(path, exact);
               return (
                 <button
                   key={path}
                   onClick={() => navigate(path)}
                   style={{
-                    background: active ? "rgba(132,204,22,0.12)" : "none",
+                    width: "100%", display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 12px", marginBottom: 2,
+                    background: active ? "rgba(132,204,22,0.12)" : "transparent",
                     border: "none",
-                    borderBottom: active ? "2px solid var(--accent)" : "2px solid transparent",
-                    borderRadius: 0,
-                    height: 56,
-                    padding: "0 18px",
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 400,
-                    color: active ? "var(--accent)" : "var(--text2)",
-                    cursor: "pointer",
-                    display: "flex", alignItems: "center", gap: 7,
-                    transition: "color 0.15s, background 0.15s",
-                    whiteSpace: "nowrap",
+                    borderLeft: active ? "3px solid #84cc16" : "3px solid transparent",
+                    borderRadius: 8, cursor: "pointer",
+                    fontSize: 13, fontWeight: active ? 600 : 400,
+                    color: active ? "#84cc16" : "#9ca3af",
+                    textAlign: "left", transition: "all 0.15s",
                   }}
-                  onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
-                  onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
+                  onMouseEnter={(e) => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                      (e.currentTarget as HTMLElement).style.color = "#e5e7eb";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                      (e.currentTarget as HTMLElement).style.color = "#9ca3af";
+                    }
+                  }}
                 >
-                  <span style={{ fontSize: 15 }}>{icon}</span>
+                  <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{icon}</span>
                   {label}
                 </button>
               );
             })}
           </nav>
 
-          {/* User info + logout */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+          {/* User card */}
+          <div style={{
+            padding: "16px 14px", borderTop: "1px solid #1e2130",
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
             <div style={{
-              width: 32, height: 32, borderRadius: "50%",
-              background: "rgba(132,204,22,0.15)",
-              border: "2px solid var(--accent)",
+              width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+              background: "rgba(132,204,22,0.15)", border: "2px solid #84cc16",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 13, fontWeight: 700, color: "var(--accent)",
+              fontSize: 13, fontWeight: 700, color: "#84cc16",
             }}>
               {(admin?.name ?? "A")[0].toUpperCase()}
             </div>
-            <div style={{ lineHeight: 1.2 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{admin?.name ?? "Admin"}</div>
-              <div style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                Administrador
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#f1f5f9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {admin?.name ?? "Admin"}
               </div>
+              <div style={{ fontSize: 11, color: "#84cc16", fontWeight: 500 }}>Administrador</div>
             </div>
             <button
               onClick={handleLogout}
+              title="Cerrar sesión"
               style={{
-                background: "none", border: "1px solid var(--border)",
-                borderRadius: 8, padding: "6px 16px",
-                fontSize: 12, color: "var(--text2)", cursor: "pointer",
-                transition: "border-color 0.15s",
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 16, color: "#6b7280", padding: 4, borderRadius: 6,
+                flexShrink: 0,
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#ef4444"; (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#ef4444"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "#6b7280"; }}
             >
-              Salir
+              ⏻
             </button>
           </div>
-        </header>
+        </aside>
 
-        {/* Content */}
-        <div style={{ flex: 1 }}>
+        {/* ── Main content ────────────────────────────────────── */}
+        <main style={{
+          flex: 1, overflowY: "auto",
+          background: "#131620",
+        }}>
           {children}
-        </div>
+        </main>
       </div>
     </AdminRoute>
   );
