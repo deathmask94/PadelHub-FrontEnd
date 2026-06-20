@@ -28,7 +28,9 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="admin-full" style={{
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      zIndex: 9999, overflowY: "auto",
       display: "flex", alignItems: "center", justifyContent: "center",
       background: "#0f1117", padding: 20, fontFamily: "var(--font-body)",
     }}>
