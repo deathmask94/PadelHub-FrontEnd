@@ -155,7 +155,7 @@ export default function AdminMetricasPage() {
           </div>
         </header>
 
-        <main style={{ padding: "24px", maxWidth: 900, margin: "0 auto" }}>
+        <main style={{ padding: "24px 48px" }}>
 
           {error && (
             <div style={{

@@ -100,7 +100,7 @@ export default function AdminPartidosPage() {
           {data && <span style={{ fontSize: 12, color: "var(--text2)" }}>{data.total} partidos</span>}
         </header>
 
-        <main style={{ padding: "20px 24px", maxWidth: 960, margin: "0 auto" }}>
+        <main style={{ padding: "20px 48px" }}>
           {/* Filtros */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto auto", gap: 10, marginBottom: 20 }}>
             <input style={inp} placeholder="Buscar por club..." value={q} onChange={(e) => setQ(e.target.value)} />

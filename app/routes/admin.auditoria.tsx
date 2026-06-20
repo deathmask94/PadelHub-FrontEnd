@@ -101,7 +101,8 @@ export default function AdminAuditoriaPage() {
       if (dateTo)   q.set("date_to",   dateTo);
 
       const token = getAdminToken();
-      const res   = await fetch(`/api/admin/audit-logs/export?${q.toString()}`, {
+      const base  = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+      const res   = await fetch(`${base}/api/admin/audit-logs/export?${q.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Error al exportar");
@@ -153,7 +154,7 @@ export default function AdminAuditoriaPage() {
           </div>
         </header>
 
-        <main style={{ padding: "24px", maxWidth: 1100, margin: "0 auto" }}>
+        <main style={{ padding: "24px 48px" }}>
 
           {error && (
             <div style={{

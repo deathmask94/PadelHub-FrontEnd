@@ -141,7 +141,7 @@ export default function AdminBackupPage() {
           <span style={{ fontWeight: 700, fontSize: 16 }}>Respaldo de base de datos</span>
         </header>
 
-        <main style={{ padding: "24px", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+        <main style={{ padding: "24px 48px", maxWidth: 1000, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
 
           {/* ── SECCIÓN DESCARGA ── */}
           <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 14, padding: "22px 24px" }}>

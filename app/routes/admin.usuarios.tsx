@@ -88,7 +88,7 @@ export default function AdminUsuariosPage() {
           )}
         </header>
 
-        <main style={{ padding: "20px 24px", maxWidth: 900, margin: "0 auto" }}>
+        <main style={{ padding: "20px 48px" }}>
           {/* Filtros */}
           <div style={{
             display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 10, marginBottom: 20,

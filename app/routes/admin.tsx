@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
         </header>
 
         {/* Main */}
-        <main style={{ padding: "28px 24px", maxWidth: 900, margin: "0 auto" }}>
+        <main style={{ padding: "28px 48px" }}>
           {/* Info de sesión */}
           <div style={{
             background: "rgba(132,204,22,0.06)", border: "1px solid var(--border2)",
@@ -88,7 +88,7 @@ export default function AdminDashboardPage() {
             PANEL DE CONTROL
           </h2>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16 }}>
             {[
               { icon: "👥", title: "Usuarios",  desc: "Ver y gestionar jugadores",  disabled: false, path: "/admin/usuarios" },
               { icon: "🏓", title: "Partidos",  desc: "Supervisar partidos activos", disabled: false, path: "/admin/partidos"    },
