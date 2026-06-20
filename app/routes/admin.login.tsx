@@ -28,14 +28,13 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div style={{
-      width: "100%", alignSelf: "stretch", minHeight: "100vh",
+    <div className="admin-full" style={{
       display: "flex", alignItems: "center", justifyContent: "center",
-      background: "var(--bg)", padding: 20, fontFamily: "var(--font-body)",
+      background: "#0f1117", padding: 20, fontFamily: "var(--font-body)",
     }}>
       <div style={{
-        width: "100%", maxWidth: 420, background: "var(--bg2)",
-        border: "1px solid var(--border)", borderRadius: 16, padding: "44px 40px",
+        width: "100%", maxWidth: 420, background: "#1a1d27",
+        border: "1px solid #2d3148", borderRadius: 16, padding: "44px 40px",
       }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{
@@ -44,10 +43,10 @@ export default function AdminLoginPage() {
             background: "rgba(132,204,22,0.12)", border: "1px solid var(--accent)",
             fontSize: 28, marginBottom: 14,
           }}>🛡️</div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: "var(--text)" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: "#f1f5f9" }}>
             Panel Administrador
           </h1>
-          <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>PadelHub</p>
+          <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>PadelHub</p>
         </div>
 
         {error && (
@@ -62,7 +61,7 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--text2)" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "#94a3b8" }}>
               RUT (sin puntos ni dígito verificador)
             </label>
             <input
@@ -76,7 +75,7 @@ export default function AdminLoginPage() {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--text2)" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "#94a3b8" }}>
               Contraseña
             </label>
             <input
@@ -99,7 +98,7 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p style={{ textAlign: "center", fontSize: 12, color: "var(--text2)", marginTop: 20, marginBottom: 0 }}>
+        <p style={{ textAlign: "center", fontSize: 12, color: "#64748b", marginTop: 20, marginBottom: 0 }}>
           Acceso restringido a administradores
         </p>
       </div>

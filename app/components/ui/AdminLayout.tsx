@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AdminRoute>
-      <div style={{ width: "100%", alignSelf: "stretch", minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)", display: "flex", flexDirection: "column" }}>
+      <div className="admin-full" style={{ background: "#0f1117", fontFamily: "var(--font-body)", display: "flex", flexDirection: "column" }}>
 
         {/* Top bar */}
         <header style={{
