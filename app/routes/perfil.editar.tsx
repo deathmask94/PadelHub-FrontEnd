@@ -4,17 +4,6 @@ import { useAuth } from "~/context/AuthContext";
 import ProtectedRoute from "~/components/ui/ProtectedRoute";
 import { uploadProfilePhoto, deleteProfilePhoto } from "~/services/auth";
 
-// Valores que entiende el backend (enum user_level de Prisma)
-const NIVELES = [
-  { key: "primera",     label: "1ra Categoría" },
-  { key: "segunda",     label: "2da Categoría" },
-  { key: "tercera",     label: "3ra Categoría" },
-  { key: "cuarta",      label: "4ta Categoría" },
-  { key: "quinta",      label: "5ta Categoría" },
-  { key: "sexta",       label: "6ta Categoría" },
-  { key: "septima_mas", label: "7ma+ Categoría" },
-];
-
 const ZONAS = [
   "Valparaíso", "Viña del Mar", "Quilpué", "Villa Alemana",
   "Concón", "Santiago Centro", "Providencia", "Las Condes",
@@ -26,7 +15,6 @@ export default function EditarPerfilPage() {
 
   const [form, setForm] = useState({
     nombre: user?.nombre || "",
-    nivel:  user?.nivel  || "",
     zona:   user?.zona   || "",
   });
   const [reminderEnabled, setReminderEnabled] = useState(true);
@@ -75,7 +63,6 @@ export default function EditarPerfilPage() {
       await editarPerfil({
         nombre:           form.nombre,
         zona:             form.zona,
-        nivel:            form.nivel,
         reminder_enabled: reminderEnabled,
       });
       setSuccess(true);
@@ -177,28 +164,6 @@ export default function EditarPerfilPage() {
             </select>
           </div>
 
-          {/* Nivel deportivo */}
-          <div className="ph-section-label fade-up-2" style={{ marginTop: 8 }}>Nivel deportivo</div>
-
-          <div style={{ background: "rgba(132,204,22,0.08)", border: "1px solid var(--border2)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--accent)", marginBottom: 14 }}>
-            💡 Tu nivel define el MMR inicial. El sistema te encontrará rivales de tu mismo nivel real.
-          </div>
-
-          <div className="fade-up-2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
-            {NIVELES.map(({ key, label }) => (
-              <button key={key} onClick={() => set("nivel", key)}
-                style={{
-                  padding: 10, borderRadius: 12, cursor: "pointer",
-                  border: `1px solid ${form.nivel === key ? "var(--accent)" : "var(--border)"}`,
-                  background: form.nivel === key ? "rgba(132,204,22,0.12)" : "var(--bg3)",
-                  color: form.nivel === key ? "var(--accent)" : "var(--text2)",
-                  fontSize: 11, fontWeight: 600, fontFamily: "var(--font-body)", transition: "all .2s",
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
 
           {/* Toggle recordatorios */}
           <div style={{

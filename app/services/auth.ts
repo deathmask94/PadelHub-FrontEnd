@@ -12,6 +12,7 @@ export interface User {
   mmr: number;
   role: string;
   is_active: boolean;
+  reminder_enabled?: boolean;
   created_at: string;
   updated_at: string;
   birth_date?: string | null;
@@ -198,9 +199,9 @@ export async function updateProfile(
   updates: Partial<FrontendUser>
 ): Promise<FrontendUser> {
   const backendUpdates: Record<string, unknown> = {};
-  if (updates.nombre !== undefined) backendUpdates.name = updates.nombre;
-  if (updates.zona   !== undefined) backendUpdates.zone = updates.zona;
-  if (updates.nivel  !== undefined) backendUpdates.level = updates.nivel;
+  if (updates.nombre            !== undefined) backendUpdates.name             = updates.nombre;
+  if (updates.zona              !== undefined) backendUpdates.zone             = updates.zona;
+  if (updates.reminder_enabled  !== undefined) backendUpdates.reminder_enabled = updates.reminder_enabled;
 
   const data = await apiFetch<{ user: User }>(`/api/users/${rut}/profile`, {
     method: 'PUT',
@@ -211,7 +212,6 @@ export async function updateProfile(
   const updated: FrontendUser = {
     ...current,
     ...normalizeUser(data.user),
-    edad: updates.edad ?? current.edad,
   };
   sessionStorage.setItem('padelhub_user', JSON.stringify(updated));
   return updated;
