@@ -144,7 +144,7 @@ export default function Perfil() {
               onClick={() => navigate("/perfil/editar")}
               style={{ fontSize: 13, color: "var(--accent)", cursor: "pointer", textDecoration: "underline" }}
             >
-              Datos adicionales →
+              Editar perfil →
             </span>
           </div>
 
@@ -271,16 +271,9 @@ export default function Perfil() {
             <div className="ph-card" style={{ textAlign: "center", padding: "28px 16px", marginBottom: 8 }}>
               <div style={{ fontSize: 32, marginBottom: 10 }}>🎾</div>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Sin partidos aún</div>
-              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>
-                Crea o únete a un partido para empezar a construir tu historial
+              <div style={{ fontSize: 13, color: "var(--text2)" }}>
+                Aquí aparecerán tus resultados cuando juegues partidos
               </div>
-              <button
-                className="ph-btn"
-                onClick={() => navigate("/crear")}
-                style={{ maxWidth: 200, margin: "0 auto" }}
-              >
-                Crear partido
-              </button>
             </div>
           ) : (
             <div className="ph-card" style={{ marginBottom: 8 }}>
