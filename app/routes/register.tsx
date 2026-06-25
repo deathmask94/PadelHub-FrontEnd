@@ -2,11 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 
-const NIVEL_TO_LEVEL: Record<string, string> = {
-  Principiante: "sexta",
-  Intermedio:   "tercera",
-  Avanzado:     "primera",
-};
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -53,7 +48,7 @@ export default function RegisterPage() {
 
   const handleSubmitFinal = async () => {
     setError("");
-    if (!form.ciudad.trim())              return setError("Ingresa tu ciudad o zona.");
+    if (!form.ciudad)                     return setError("Selecciona tu zona.");
     if (form.password.length < 8)         return setError("La contraseña debe tener al menos 8 caracteres.");
     if (form.password !== form.confirmPassword) return setError("Las contraseñas no coinciden.");
 
@@ -210,8 +205,15 @@ export default function RegisterPage() {
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Ciudad / Zona</label>
-              <input className="ph-input" type="text" placeholder="Ej: Quilpué" value={form.ciudad} onChange={(e) => set("ciudad", e.target.value)} />
+              <label className="ph-label">Zona</label>
+              <select className="ph-select" value={form.ciudad} onChange={(e) => set("ciudad", e.target.value)}>
+                <option value="">Selecciona tu zona</option>
+                <option value="Viña del Mar">Viña del Mar</option>
+                <option value="Valparaíso">Valparaíso</option>
+                <option value="Quilpué">Quilpué</option>
+                <option value="Villa Alemana">Villa Alemana</option>
+                <option value="Concón">Concón</option>
+              </select>
             </div>
 
             <div className="ph-input-group">
