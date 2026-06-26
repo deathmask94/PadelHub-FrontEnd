@@ -92,7 +92,6 @@ export default function Perfil() {
   const esNuevo       = matchesPlayed === 0;
   const lastMatches   = stats?.last_matches   ?? [];
   const mmrChart      = stats?.mmr_chart      ?? [];
-  const maxMMR        = mmrChart.length > 0 ? Math.max(...mmrChart) : 1;
   const semanas       = mmrChart.map((_, i) => `S${i + 1}`);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,22 +322,70 @@ export default function Perfil() {
               )}
             </div>
             {esNuevo || mmrChart.length === 0 ? (
-              <div style={{ height: 80, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <div style={{ fontSize: 24 }}>📈</div>
+              <div style={{ height: 96, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <div style={{ fontSize: 28 }}>📈</div>
                 <div style={{ fontSize: 12, color: "var(--text2)", textAlign: "center" }}>
                   Tu evolución aparecerá aquí cuando juegues partidos
                 </div>
               </div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
-                {mmrChart.map((v, i) => (
-                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <div style={{ width: "100%", height: `${(v / maxMMR) * 100}%`, background: i === mmrChart.length - 1 ? "var(--accent)" : "rgba(132,204,22,0.3)", borderRadius: "4px 4px 0 0" }} />
-                    <span style={{ fontSize: 10, color: "var(--text2)" }}>{semanas[i]}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            ) : (() => {
+              const W = 300, H = 110;
+              const padL = 6, padR = 6, padT = 10, padB = 24;
+              const cW = W - padL - padR;
+              const cH = H - padT - padB;
+              const minV = Math.min(...mmrChart);
+              const maxV = Math.max(...mmrChart);
+              const range = (maxV - minV) || 80;
+              const vMin = minV - range * 0.15;
+              const vMax = maxV + range * 0.15;
+              const vRange = vMax - vMin;
+              const n = mmrChart.length;
+              const pts = mmrChart.map((v, i) => ({
+                x: padL + (n === 1 ? cW / 2 : (i / (n - 1)) * cW),
+                y: padT + (1 - (v - vMin) / vRange) * cH,
+              }));
+              const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+              const area = `${line} L${pts[n-1].x.toFixed(1)},${(padT + cH).toFixed(1)} L${pts[0].x.toFixed(1)},${(padT + cH).toFixed(1)} Z`;
+              const last = pts[n - 1];
+              return (
+                <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} aria-hidden>
+                  <defs>
+                    <linearGradient id="mmr-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="#84cc16" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#84cc16" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  {/* Grid lines */}
+                  {[0.25, 0.5, 0.75].map((f) => (
+                    <line key={f} x1={padL} y1={padT + f * cH} x2={W - padR} y2={padT + f * cH}
+                      stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+                  ))}
+                  {/* Area fill */}
+                  <path d={area} fill="url(#mmr-grad)" />
+                  {/* Line */}
+                  <path d={line} fill="none" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  {/* Dots */}
+                  {pts.map((p, i) => (
+                    <circle key={i} cx={p.x} cy={p.y} r={i === n - 1 ? 4 : 2.5}
+                      fill={i === n - 1 ? "#84cc16" : "rgba(132,204,22,0.5)"}
+                      stroke={i === n - 1 ? "var(--bg, #1a1a1a)" : "none"}
+                      strokeWidth="2" />
+                  ))}
+                  {/* Last value label */}
+                  <text x={last.x} y={last.y - 8} textAnchor="middle"
+                    fontSize="9" fontWeight="700" fill="#84cc16">
+                    {mmrChart[n - 1]}
+                  </text>
+                  {/* Week labels */}
+                  {pts.map((p, i) => (
+                    <text key={i} x={p.x} y={H - 4} textAnchor="middle"
+                      fontSize="8.5" fill="rgba(150,150,150,0.8)">
+                      {semanas[i]}
+                    </text>
+                  ))}
+                </svg>
+              );
+            })()}
           </div>
 
           {/* ── Últimos partidos ── */}
