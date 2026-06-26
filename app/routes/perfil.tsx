@@ -92,7 +92,7 @@ export default function Perfil() {
   const esNuevo       = matchesPlayed === 0;
   const lastMatches   = stats?.last_matches   ?? [];
   const mmrChart      = stats?.mmr_chart      ?? [];
-  const semanas       = mmrChart.map((_, i) => `S${i + 1}`);
+  const semanas       = mmrChart.map((_, i) => `P${i + 1}`);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -171,7 +171,7 @@ export default function Perfil() {
                   style={{ width: 64, height: 64, fontSize: 22, background: "var(--accent)", borderRadius: 20, flexShrink: 0, overflow: "hidden" }}
                 >
                   {photoPreview
-                    ? <img src={photoPreview} alt={nombre} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+                    ? <img src={photoPreview} alt={user?.nombre ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
                     : initiales
                   }
                 </div>
