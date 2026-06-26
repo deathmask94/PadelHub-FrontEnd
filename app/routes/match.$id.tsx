@@ -166,7 +166,7 @@ export default function MatchDetail() {
     setActioning(true);
     try {
       await apiFetch(`/api/matches/${id}/cancel`, { method: "POST" });
-      showToast("Partido cancelado. Se notificó a los jugadores.");
+      showToast("Partido cancelado.");
       setConfirmCancel(false);
       await load();
       setTimeout(() => navigate("/home"), 3000);
