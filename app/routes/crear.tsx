@@ -42,16 +42,6 @@ function getTimeSlots(abre: string, cierra: string): string[] {
   return slots;
 }
 
-function getNextDays(n = 60): Date[] {
-  const days: Date[] = [];
-  const today = new Date(); today.setHours(0,0,0,0);
-  for (let i = 0; i < n; i++) {
-    const d = new Date(today); d.setDate(today.getDate() + i);
-    days.push(d);
-  }
-  return days;
-}
-
 const DIAS_ES   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES_ES  = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_FULL= ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -60,6 +50,9 @@ function formatDateStr(d: Date) {
   return `${DIAS_ES[d.getDay()]} ${d.getDate()} ${MESES_ES[d.getMonth()]}`;
 }
 
+function toDateKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
 
 export default function CrearPartido() {
   const { user } = useAuth();
@@ -76,6 +69,7 @@ export default function CrearPartido() {
   const [showClubs,      setShowClubs]      = useState(false);
 
   const [timeSlots,      setTimeSlots]      = useState<string[]>([]);
+  const [takenSlots,     setTakenSlots]     = useState<string[]>([]);
   const [selectedTime,   setSelectedTime]   = useState("");
   const [showTime,       setShowTime]       = useState(false);
 
@@ -93,6 +87,7 @@ export default function CrearPartido() {
     ? user.nombre.split(" ").map((n) => n[0]).slice(0,2).join("").toUpperCase()
     : "?";
 
+  // Recalculate time slots when club or date changes
   useEffect(() => {
     if (!selectedClub) return;
     const slots = getTimeSlots(selectedClub.abre, selectedClub.cierra);
@@ -105,7 +100,18 @@ export default function CrearPartido() {
         })
       : slots;
     setTimeSlots(filtered);
-    setSelectedTime(filtered[0] ?? "");
+    setSelectedTime("");
+  }, [selectedClub, selectedDate]);
+
+  // Fetch taken slots when club + date are both set
+  useEffect(() => {
+    if (!selectedClub) { setTakenSlots([]); return; }
+    const dateKey = toDateKey(selectedDate);
+    apiFetch<{ takenSlots: string[] }>(
+      `/api/matches/availability?club=${encodeURIComponent(selectedClub.nombre)}&date=${dateKey}`
+    )
+      .then((d) => setTakenSlots(d.takenSlots))
+      .catch(() => setTakenSlots([]));
   }, [selectedClub, selectedDate]);
 
   const numSlots = formato === "dobles" ? 3 : 1;
@@ -163,10 +169,7 @@ export default function CrearPartido() {
 
     setSaving(true);
     try {
-      const y  = selectedDate.getFullYear();
-      const mo = String(selectedDate.getMonth() + 1).padStart(2, "0");
-      const d  = String(selectedDate.getDate()).padStart(2, "0");
-      const matchDate = `${y}-${mo}-${d}`;
+      const matchDate = toDateKey(selectedDate);
       const matchTime = `${matchDate}T${selectedTime}:00`;
 
       await createMatch({
@@ -201,40 +204,20 @@ export default function CrearPartido() {
 
         <div style={{ padding:"0 20px" }}>
 
-          {/* Fecha + Hora */}
-          <div style={{ fontSize:11, color:"var(--text2)", textTransform:"uppercase", letterSpacing:0.8, marginBottom:10 }}>Detalles</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
-            <div>
-              <label className="ph-label">Fecha</label>
-              <button
-                onClick={() => { setShowCalendar(!showCalendar); setShowTime(false); setShowClubs(false); }}
-                style={{
-                  width:"100%", background:"var(--bg3)",
-                  border:`1px solid ${showCalendar?"var(--accent)":"var(--border)"}`,
-                  borderRadius:12, padding:"12px 14px", color:"var(--text)",
-                  fontSize:14, fontFamily:"var(--font-body)", cursor:"pointer", textAlign:"left",
-                }}
-              >
-                {formatDateStr(selectedDate)}
-              </button>
-            </div>
-            <div>
-              <label className="ph-label">Hora</label>
-              <button
-                onClick={() => { setShowTime(!showTime); setShowCalendar(false); setShowClubs(false); }}
-                disabled={!selectedClub}
-                style={{
-                  width:"100%", background:"var(--bg3)",
-                  border:`1px solid ${showTime?"var(--accent)":"var(--border)"}`,
-                  borderRadius:12, padding:"12px 14px",
-                  color: selectedClub ? "var(--text)" : "var(--text2)",
-                  fontSize:14, fontFamily:"var(--font-body)",
-                  cursor: selectedClub ? "pointer" : "not-allowed", textAlign:"left",
-                }}
-              >
-                {selectedClub ? (selectedTime || "Seleccionar") : "Elige club primero"}
-              </button>
-            </div>
+          {/* 1. Fecha */}
+          <div style={{ marginBottom:14 }}>
+            <label className="ph-label">Fecha</label>
+            <button
+              onClick={() => { setShowCalendar(!showCalendar); setShowTime(false); setShowClubs(false); }}
+              style={{
+                width:"100%", background:"var(--bg3)",
+                border:`1px solid ${showCalendar?"var(--accent)":"var(--border)"}`,
+                borderRadius:12, padding:"12px 14px", color:"var(--text)",
+                fontSize:14, fontFamily:"var(--font-body)", cursor:"pointer", textAlign:"left",
+              }}
+            >
+              {formatDateStr(selectedDate)}
+            </button>
           </div>
 
           {/* Calendario */}
@@ -275,30 +258,9 @@ export default function CrearPartido() {
             </div>
           )}
 
-          {/* Selector hora */}
-          {showTime && timeSlots.length>0 && (
-            <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:16, marginBottom:14, overflow:"hidden" }}>
-              <div style={{ maxHeight:180, overflowY:"auto", padding:"8px 0" }}>
-                {timeSlots.map(t=>(
-                  <button key={t} onClick={()=>{setSelectedTime(t);setShowTime(false);}}
-                    style={{
-                      width:"100%", padding:"10px 16px", background:"transparent",
-                      border:"none", borderBottom:"1px solid var(--border)",
-                      textAlign:"left", cursor:"pointer",
-                      color: selectedTime===t?"var(--accent)":"var(--text)",
-                      fontFamily:"var(--font-body)", fontSize:14,
-                      fontWeight: selectedTime===t?700:400,
-                    }}>
-                    {t} {selectedTime===t&&"✓"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Club */}
+          {/* 2. Club / Recinto */}
           <div style={{ marginBottom:14 }}>
-            <label className="ph-label">Club / Cancha</label>
+            <label className="ph-label">Club / Recinto</label>
             <button
               onClick={()=>{setShowClubs(!showClubs);setShowCalendar(false);setShowTime(false);}}
               style={{
@@ -330,7 +292,59 @@ export default function CrearPartido() {
             )}
           </div>
 
-          {/* Formato */}
+          {/* 3. Hora */}
+          <div style={{ marginBottom:14 }}>
+            <label className="ph-label">Hora</label>
+            <button
+              onClick={() => { setShowTime(!showTime); setShowCalendar(false); setShowClubs(false); }}
+              disabled={!selectedClub}
+              style={{
+                width:"100%", background:"var(--bg3)",
+                border:`1px solid ${showTime?"var(--accent)":"var(--border)"}`,
+                borderRadius:12, padding:"12px 14px",
+                color: selectedClub ? "var(--text)" : "var(--text2)",
+                fontSize:14, fontFamily:"var(--font-body)",
+                cursor: selectedClub ? "pointer" : "not-allowed", textAlign:"left",
+              }}
+            >
+              {selectedClub ? (selectedTime || "Selecciona una hora") : "Elige el club primero"}
+            </button>
+
+            {/* Selector hora */}
+            {showTime && timeSlots.length>0 && (
+              <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:12, marginTop:6, overflow:"hidden" }}>
+                <div style={{ maxHeight:200, overflowY:"auto", padding:"4px 0" }}>
+                  {timeSlots.map(t => {
+                    const isTaken = takenSlots.includes(t);
+                    const isSelected = selectedTime === t;
+                    return (
+                      <button
+                        key={t}
+                        disabled={isTaken}
+                        onClick={()=>{if(!isTaken){setSelectedTime(t);setShowTime(false);}}}
+                        style={{
+                          width:"100%", padding:"10px 16px", background:"transparent",
+                          border:"none", borderBottom:"1px solid var(--border)",
+                          textAlign:"left", cursor: isTaken ? "not-allowed" : "pointer",
+                          color: isTaken ? "var(--text2)" : isSelected ? "var(--accent)" : "var(--text)",
+                          opacity: isTaken ? 0.4 : 1,
+                          fontFamily:"var(--font-body)", fontSize:14,
+                          fontWeight: isSelected ? 700 : 400,
+                          display: "flex", justifyContent: "space-between", alignItems: "center",
+                        }}
+                      >
+                        <span>{t}</span>
+                        {isTaken && <span style={{ fontSize:11, color:"var(--text2)" }}>Ocupado</span>}
+                        {isSelected && !isTaken && <span style={{ fontSize:12 }}>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 4. Formato */}
           <div style={{ marginBottom:14 }}>
             <label className="ph-label">Formato</label>
             <div style={{ display:"flex", gap:10 }}>
@@ -348,7 +362,7 @@ export default function CrearPartido() {
             </div>
           </div>
 
-          {/* Jugadores */}
+          {/* 5. Jugadores */}
           <div style={{ marginBottom:14 }}>
             <label className="ph-label">Jugadores</label>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -391,7 +405,6 @@ export default function CrearPartido() {
                       borderRadius:12, minWidth:220, overflow:"hidden",
                       boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
                     }}>
-                      {/* Búsqueda */}
                       <div style={{ padding:"8px 10px", borderBottom:"1px solid var(--border)" }}>
                         <input
                           autoFocus
@@ -403,7 +416,6 @@ export default function CrearPartido() {
                           style={{ fontSize:13, padding:"6px 10px" }}
                         />
                       </div>
-                      {/* Lista */}
                       <div style={{ maxHeight:200, overflowY:"auto" }}>
                         {pickerLoading ? (
                           <div style={{ padding:"14px", textAlign:"center", fontSize:12, color:"var(--text2)" }}>Buscando…</div>
@@ -453,7 +465,7 @@ export default function CrearPartido() {
             borderRadius: 10, padding: "10px 14px", fontSize: 12,
             color: "var(--accent)", marginBottom: 20,
           }}>
-            🔔 El partido quedará visible en <strong>Disponibles</strong> para todos los jugadores de la app. Quien lo acepte quedará inscrito automáticamente.
+            🔔 El partido quedará visible en <strong>Disponibles</strong> para todos los jugadores de la app.
           </div>
 
           <button className="ph-btn" onClick={handleCrear} disabled={saving} style={{ marginBottom:8 }}>

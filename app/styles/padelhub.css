@@ -281,6 +281,11 @@ body {
 .fade-up-4 { animation: fadeUp 0.35s 0.20s ease both; }
 .fade-up-5 { animation: fadeUp 0.35s 0.25s ease both; }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.12); }
+}
+
 /* ── Divider ──────────────────────────────────────────────── */
 .ph-divider {
   display: flex;
