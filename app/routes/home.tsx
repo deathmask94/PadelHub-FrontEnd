@@ -219,10 +219,8 @@ export default function Home() {
         </div>
         <div className="ph-quick-grid" style={{ marginBottom: 20 }}>
           {[
-            { icon: "🏓", title: "Crear partido", sub: "Organiza un juego",    path: "/crear"       },
-            { icon: "🎯", title: "Buscar rival",  sub: "Matchmaking MMR",      path: "/matchmaking" },
-            { icon: "🏆", title: "Ranking",       sub: `Top ${user?.zona ?? "tu zona"}`, path: "/ranking" },
-            { icon: "📊", title: "Mi perfil",     sub: "Stats y historial",    path: "/perfil"      },
+            { icon: "🏓", title: "Crear partido", sub: "Organiza un juego", path: "/crear"       },
+            { icon: "🎯", title: "Buscar rival",  sub: "Matchmaking MMR",   path: "/matchmaking" },
           ].map((a) => (
             <div key={a.title} className="ph-quick-card" onClick={() => navigate(a.path)}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>{a.icon}</div>
