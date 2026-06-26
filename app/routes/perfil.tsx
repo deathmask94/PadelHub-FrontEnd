@@ -51,7 +51,6 @@ export default function Perfil() {
   const [playerRatings, setPlayerRatings] = useState<PlayerRatings | null>(null);
 
   // Edit state
-  const [nombre,          setNombre]          = useState(user?.nombre ?? "");
   const [zona,            setZona]            = useState(user?.zona   ?? "");
   const [reminderEnabled, setReminderEnabled] = useState(user?.reminder_enabled ?? true);
   const [photoFile,       setPhotoFile]       = useState<File | null>(null);
@@ -74,20 +73,18 @@ export default function Perfil() {
   // Keep form in sync with context (e.g. after save)
   useEffect(() => {
     if (!user) return;
-    setNombre(user.nombre ?? "");
-    setZona(user.zona   ?? "");
+    setZona(user.zona ?? "");
     setReminderEnabled(user.reminder_enabled ?? true);
     setPhotoPreview(user.photo_url ?? null);
   }, [user?.rut]);
 
   const isDirty =
-    nombre          !== (user?.nombre           ?? "") ||
     zona            !== (user?.zona             ?? "") ||
     reminderEnabled !== (user?.reminder_enabled ?? true) ||
     photoFile !== null;
 
-  const initiales = nombre
-    ? nombre.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+  const initiales = user?.nombre
+    ? user.nombre.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?";
 
   const matchesPlayed = stats?.matches_played ?? 0;
@@ -121,7 +118,6 @@ export default function Perfil() {
 
   const handleSave = async () => {
     setSaveError(""); setSaveSuccess(false);
-    if (!nombre.trim()) { setSaveError("El nombre no puede estar vacío"); return; }
     setSaving(true);
     try {
       if (photoFile && user) {
@@ -130,7 +126,7 @@ export default function Perfil() {
         setUploadingPhoto(false);
         setPhotoFile(null);
       }
-      await editarPerfil({ nombre, zona, reminder_enabled: reminderEnabled });
+      await editarPerfil({ zona, reminder_enabled: reminderEnabled });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
     } catch (e: unknown) {
@@ -201,13 +197,9 @@ export default function Perfil() {
 
             {/* Nombre + Zona + categoría */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <input
-                className="ph-input"
-                type="text"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, textTransform: "uppercase", marginBottom: 8, padding: "6px 10px" }}
-              />
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, textTransform: "uppercase", lineHeight: 1.2, marginBottom: 8, wordBreak: "break-word" }}>
+                {user?.nombre ?? "—"}
+              </div>
               <select
                 className="ph-select"
                 value={zona}
