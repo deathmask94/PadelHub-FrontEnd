@@ -169,6 +169,7 @@ export default function MatchDetail() {
       showToast("Partido cancelado. Se notificó a los jugadores.");
       setConfirmCancel(false);
       await load();
+      setTimeout(() => navigate("/home"), 3000);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al cancelar");
     } finally {
