@@ -1,15 +1,6 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { apiFetch } from "~/services/auth";
+import { useNotifications } from "~/context/NotificationsContext";
 import NavBar from "~/components/ui/NavBar";
-
-interface Notification {
-  id: string;
-  title: string;
-  body: string | null;
-  read: boolean;
-  created_at: string;
-}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -23,22 +14,7 @@ function timeAgo(dateStr: string): string {
 
 export default function Notificaciones() {
   const navigate = useNavigate();
-  const [notifs,  setNotifs]  = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiFetch<{ notifications: Notification[]; unread_count: number }>("/api/notifications")
-      .then((d) => setNotifs(d.notifications))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const markAll = () => {
-    apiFetch("/api/notifications", { method: "PATCH" }).catch(() => {});
-    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const unreadCount = notifs.filter((n) => !n.read).length;
+  const { notifications: notifs, unreadCount, loading, markAllRead } = useNotifications();
 
   return (
     <div className="ph-screen">
@@ -55,7 +31,7 @@ export default function Notificaciones() {
           </div>
           {unreadCount > 0 ? (
             <button
-              onClick={markAll}
+              onClick={markAllRead}
               style={{
                 fontSize: 12, color: "var(--accent)",
                 background: "none", border: "none", cursor: "pointer",

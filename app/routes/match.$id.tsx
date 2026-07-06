@@ -125,6 +125,14 @@ export default function MatchDetail() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Refresco automático: para no tener que recargar la página a mano
+  // esperando a que el rival acepte o rechace el desafío.
+  useEffect(() => {
+    if (match && (match.status === "finished" || match.status === "cancelled")) return;
+    const poll = setInterval(load, 5000);
+    return () => clearInterval(poll);
+  }, [load, match?.status]);
+
   useEffect(() => {
     if (searchQ.length < 2) { setResults([]); return; }
     const t = setTimeout(async () => {

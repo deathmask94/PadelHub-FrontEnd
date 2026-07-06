@@ -78,23 +78,35 @@ export function clearSession(): void {
   sessionStorage.removeItem('padelhub_refresh');
 }
 
-async function refreshAccessToken(): Promise<boolean> {
-  const rt = getRefreshToken();
-  if (!rt) return false;
-  try {
-    const res = await fetch(`${API}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: rt }),
-    });
-    if (!res.ok) { clearSession(); return false; }
-    const data = await res.json();
-    sessionStorage.setItem('padelhub_token', data.token);
-    sessionStorage.setItem('padelhub_refresh', data.refreshToken);
-    return true;
-  } catch {
-    return false;
-  }
+// El refresh token es de un solo uso (se rota en el backend). Si varias
+// pantallas hacen polling en paralelo y el access token expira, todas
+// disparan un refresh a la vez; sin esta deduplicación, solo la primera
+// gana y las demás invalidan la sesión que la ganadora acaba de renovar.
+let refreshPromise: Promise<boolean> | null = null;
+
+function refreshAccessToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const rt = getRefreshToken();
+    if (!rt) return false;
+    try {
+      const res = await fetch(`${API}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      });
+      if (!res.ok) { clearSession(); return false; }
+      const data = await res.json();
+      sessionStorage.setItem('padelhub_token', data.token);
+      sessionStorage.setItem('padelhub_refresh', data.refreshToken);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
+  return refreshPromise.finally(() => { refreshPromise = null; });
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {

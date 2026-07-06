@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
-import { apiFetch } from "~/services/auth";
+import { useNotifications } from "~/context/NotificationsContext";
 import NavBar from "~/components/ui/NavBar";
 import { getMatches, getMyMatches, respondInvitation, type Match, type MatchFilters } from "~/services/matches";
 
@@ -48,40 +48,37 @@ export default function Home() {
   const [activeTab,    setActiveTab]    = useState<'all' | 'mine'>('all');
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [filters,      setFilters]      = useState<MatchFilters>({ zone: "", format: undefined, date: undefined });
-  const [unread,       setUnread]       = useState(0);
+  const { unreadCount } = useNotifications();
 
-  useEffect(() => {
-    apiFetch<{ unread_count: number }>("/api/notifications")
-      .then((d) => setUnread(d.unread_count))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
+  const fetchMatches = useCallback(async (opts?: { silent?: boolean }) => {
     const activeFilters: MatchFilters = {
       zone:   filters.zone   || undefined,
       format: filters.format || undefined,
       date:   filters.date   || undefined,
     };
-    setLoadingM(true);
-    Promise.all([getMatches(activeFilters), getMyMatches()])
-      .then(([all, mine]) => { setMatches(all); setMyMatches(mine); })
-      .catch((e: Error) => setErrorM(e.message))
-      .finally(() => setLoadingM(false));
+    if (!opts?.silent) setLoadingM(true);
+    try {
+      const [all, mine] = await Promise.all([getMatches(activeFilters), getMyMatches()]);
+      setMatches(all); setMyMatches(mine);
+    } catch (e: unknown) {
+      if (!opts?.silent) setErrorM(e instanceof Error ? e.message : 'Error al cargar los partidos');
+    } finally {
+      if (!opts?.silent) setLoadingM(false);
+    }
   }, [filters]);
 
-  const reload = async () => {
-    const activeFilters: MatchFilters = {
-      zone:   filters.zone   || undefined,
-      format: filters.format || undefined,
-      date:   filters.date   || undefined,
-    };
-    const [all, mine] = await Promise.all([getMatches(activeFilters), getMyMatches()]);
-    setMatches(all); setMyMatches(mine);
-  };
+  useEffect(() => { fetchMatches(); }, [fetchMatches]);
+
+  // Refresco automático: para ver aceptaciones/rechazos de desafíos
+  // sin tener que recargar la página a mano.
+  useEffect(() => {
+    const poll = setInterval(() => fetchMatches({ silent: true }), 5000);
+    return () => clearInterval(poll);
+  }, [fetchMatches]);
 
   const handleRespond = async (matchId: string, accept: boolean) => {
     setRespondingId(matchId);
-    try { await respondInvitation(matchId, accept); await reload(); }
+    try { await respondInvitation(matchId, accept); await fetchMatches({ silent: true }); }
     catch (e: unknown) { setErrorM(e instanceof Error ? e.message : 'Error al responder'); }
     finally { setRespondingId(null); }
   };
@@ -125,14 +122,14 @@ export default function Home() {
               }}
             >
               🔔
-              {unread > 0 && (
+              {unreadCount > 0 && (
                 <span style={{
                   position: "absolute", top: -4, right: -4,
                   background: "#ef4444", color: "#fff", borderRadius: "50%",
                   minWidth: 16, height: 16, fontSize: 9, fontWeight: 700,
                   display: "flex", alignItems: "center", justifyContent: "center", padding: "0 2px",
                 }}>
-                  {unread > 9 ? "9+" : unread}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>

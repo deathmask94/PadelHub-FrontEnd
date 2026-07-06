@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import { AuthProvider, useAuth } from "~/context/AuthContext";
 import { PartidosProvider } from "~/context/PartidosContext";
+import { NotificationsProvider } from "~/context/NotificationsContext";
 import ProtectedRoute from "~/components/ui/ProtectedRoute";
 import "./app.css";
 
@@ -55,9 +56,11 @@ function AppWithProviders() {
   const { user } = useAuth();
   return (
     <PartidosProvider userId={user?.id}>
-      <ProtectedRoute>
-        <Outlet />
-      </ProtectedRoute>
+      <NotificationsProvider enabled={!!user}>
+        <ProtectedRoute>
+          <Outlet />
+        </ProtectedRoute>
+      </NotificationsProvider>
     </PartidosProvider>
   );
 }
