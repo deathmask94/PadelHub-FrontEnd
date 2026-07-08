@@ -74,6 +74,7 @@ export default function CrearPartido() {
   const [showTime,       setShowTime]       = useState(false);
 
   const [formato,        setFormato]        = useState<"dobles"|"individual">("dobles");
+  const [generoRival,    setGeneroRival]    = useState<"" | "masculino" | "femenino">("");
   const [jugadores,      setJugadores]      = useState<(PlayerOption|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
   const [pickerSearch,   setPickerSearch]   = useState("");
@@ -178,6 +179,7 @@ export default function CrearPartido() {
         format:       formato === "dobles" ? "doubles" : "singles",
         match_date:   matchDate,
         match_time:   matchTime,
+        ...(generoRival ? { gender_preference: generoRival } : {}),
       });
 
       showToastMsg("¡Partido creado! Ya aparece en Disponibles para todos los jugadores.");
@@ -357,6 +359,26 @@ export default function CrearPartido() {
                     {f==="dobles"?"Dobles":"Individual"}
                   </div>
                   <div style={{ fontSize:12, color:"var(--text2)" }}>{f==="dobles"?"2 vs 2":"1 vs 1"}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4b. Género permitido para unirse (cupos abiertos) */}
+          <div style={{ marginBottom:14 }}>
+            <label className="ph-label">Género para unirse a los cupos abiertos</label>
+            <div style={{ display:"flex", gap:8 }}>
+              {([
+                { value: "" as const,          label: "Todos" },
+                { value: "masculino" as const, label: "Hombres" },
+                { value: "femenino" as const,  label: "Mujeres" },
+              ]).map((opt) => (
+                <button key={opt.label} type="button"
+                  onClick={() => setGeneroRival(opt.value)}
+                  className={`ph-format-opt${generoRival === opt.value ? " selected" : ""}`}
+                  style={{ flex: 1, padding: "10px 0" }}
+                >
+                  {opt.label}
                 </button>
               ))}
             </div>

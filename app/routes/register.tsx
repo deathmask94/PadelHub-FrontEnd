@@ -19,6 +19,7 @@ export default function RegisterPage() {
     fechaNacimiento: "",
     telefono:        "",
     email:           "",
+    genero:          "" as "" | "masculino" | "femenino",
     nivel:           "Principiante",
     ciudad:          "",
     password:        "",
@@ -27,6 +28,9 @@ export default function RegisterPage() {
 
   const set = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  const setGenero = (v: "masculino" | "femenino") =>
+    setForm((p) => ({ ...p, genero: v }));
 
   const MAX_BIRTH_DATE = (() => {
     const d = new Date();
@@ -43,6 +47,7 @@ export default function RegisterPage() {
     if (!form.telefono.trim())                      return setError("Ingresa tu número de teléfono.");
     if (!form.email.trim())                         return setError("Ingresa tu correo electrónico.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError("El correo electrónico no es válido.");
+    if (!form.genero)                               return setError("Selecciona tu género.");
     setStep(2);
   };
 
@@ -64,6 +69,7 @@ export default function RegisterPage() {
         email:      form.email.toLowerCase().trim(),
         password:   form.password,
         zone:       form.ciudad,
+        gender:     form.genero as "masculino" | "femenino",
         birth_date: form.fechaNacimiento || undefined,
       });
       // Asegurar que la pantalla se vea al menos 2 segundos
@@ -177,6 +183,23 @@ export default function RegisterPage() {
             <div className="ph-input-group">
               <label className="ph-label">Correo electrónico</label>
               <input className="ph-input" type="email" placeholder="tucorreo@email.com" value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" />
+            </div>
+
+            <div className="ph-input-group">
+              <label className="ph-label">Género</label>
+              <div style={{ display: "flex", gap: 10 }}>
+                {(["masculino", "femenino"] as const).map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGenero(g)}
+                    className={`ph-format-opt${form.genero === g ? " selected" : ""}`}
+                    style={{ flex: 1, padding: "10px 0" }}
+                  >
+                    {g === "masculino" ? "Hombre" : "Mujer"}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button className="ph-btn" type="button" onClick={handleNextStep} style={{ marginTop: 12 }}>

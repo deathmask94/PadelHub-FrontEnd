@@ -30,6 +30,7 @@ interface AuthContextType {
     email?: string;
     password: string;
     zone: string;
+    gender: "masculino" | "femenino";
     birth_date?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email?: string;
     password: string;
     zone: string;
+    gender: "masculino" | "femenino";
     birth_date?: string;
   }) => {
     const { user } = await registerUser(data);

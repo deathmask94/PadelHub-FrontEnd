@@ -46,6 +46,7 @@ export default function Matchmaking() {
   const [suggestions,  setSuggestions]  = useState<Suggestion[]>([]);
   const [index,        setIndex]        = useState(0);
   const [toast,        setToast]        = useState("");
+  const [generoBusqueda, setGeneroBusqueda] = useState<"" | "masculino" | "femenino">("");
 
   // Challenge form
   const [clubInput,   setClubInput]   = useState("");
@@ -63,7 +64,8 @@ export default function Matchmaking() {
     setIndex(0);
     setFormOpen(false);
     try {
-      const data = await apiFetch<SuggestionsResponse>("/api/users/suggestions");
+      const qs = generoBusqueda ? `?gender=${generoBusqueda}` : "";
+      const data = await apiFetch<SuggestionsResponse>(`/api/users/suggestions${qs}`);
       setSuggestions(data.suggestions);
       setPhase(data.suggestions.length > 0 ? "found" : "empty");
     } catch {
@@ -174,9 +176,31 @@ export default function Matchmaking() {
           {phase === "idle" && (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🎯</div>
-              <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 24, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20, lineHeight: 1.5 }}>
                 Te buscaremos un rival con MMR similar en tu zona
               </div>
+
+              <div style={{ marginBottom: 24, textAlign: "left" }}>
+                <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+                  Género del rival
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {([
+                    { value: "" as const,          label: "Todos" },
+                    { value: "masculino" as const, label: "Hombres" },
+                    { value: "femenino" as const,  label: "Mujeres" },
+                  ]).map((opt) => (
+                    <button key={opt.label} type="button"
+                      onClick={() => setGeneroBusqueda(opt.value)}
+                      className={`ph-format-opt${generoBusqueda === opt.value ? " selected" : ""}`}
+                      style={{ flex: 1, padding: "10px 0" }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <button className="ph-btn" onClick={handleSearch}>
                 Buscar rival
               </button>

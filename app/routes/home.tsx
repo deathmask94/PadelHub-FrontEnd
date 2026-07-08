@@ -332,7 +332,14 @@ export default function Home() {
                     {/* Fila 1: club + status */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{m.club}</div>
-                      <span className="ph-pill ph-pill-green" style={{ fontSize: 10 }}>Abierto</span>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {m.gender_preference && (
+                          <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
+                            {m.gender_preference === "masculino" ? "Solo hombres" : "Solo mujeres"}
+                          </span>
+                        )}
+                        <span className="ph-pill ph-pill-green" style={{ fontSize: 10 }}>Abierto</span>
+                      </div>
                     </div>
 
                     {/* Fila 2: fecha, hora, formato */}

@@ -8,6 +8,7 @@ export interface User {
   name: string;
   photo_url: string | null;
   level: string;
+  gender: "masculino" | "femenino" | null;
   zone: string;
   mmr: number;
   role: string;
@@ -150,6 +151,7 @@ export async function registerUser(params: {
   email?: string;
   password: string;
   zone: string;
+  gender: "masculino" | "femenino";
   birth_date?: string;
 }): Promise<{ user: FrontendUser }> {
   const data = await apiFetch<{ user: User; token: string; refreshToken: string }>('/api/users', {
