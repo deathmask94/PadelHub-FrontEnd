@@ -122,9 +122,11 @@ export default function RegisterPage() {
 
         {/* Logo */}
         <div className="fade-up" style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ width: 72, height: 72, background: "var(--accent)", borderRadius: 22, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 800, color: "#fff" }}>H</span>
-          </div>
+          <img
+            src="/icon.png" alt="PadelHub"
+            width={72} height={72}
+            style={{ borderRadius: 22, margin: "0 auto 14px", display: "block" }}
+          />
           <div style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "var(--text)" }}>PadelHub</div>
           <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>
             {step === 1 ? "Únete a la comunidad" : "Configura tu cuenta"}
