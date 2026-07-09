@@ -10,9 +10,11 @@ interface BackupInfo {
   total_records_exported: number;
   exported_entities_count: number;
   environment: string;
+  schema_included?: boolean;
 }
 interface BackupFile {
   backup_info: BackupInfo;
+  schema_prisma?: string | null;
   database: Record<string, { record_count: number; records: unknown[] }>;
 }
 interface RestoreResult {
@@ -138,7 +140,7 @@ export default function AdminBackupPage() {
               <span style={{ fontWeight: 700, fontSize: 16 }}>Descargar respaldo</span>
             </div>
             <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>
-              Genera y descarga un archivo JSON con todos los datos de la plataforma: usuarios, partidos, resultados, historial de MMR y más. La acción queda registrada en el log de auditoría.
+              Genera y descarga un archivo JSON con todos los datos de la plataforma: usuarios, partidos, resultados, historial de MMR y más. Incluye también el esquema de la base de datos (<code>schema.prisma</code>), necesario para recrear la estructura de las tablas si la base de datos se pierde por completo (ejecutando <code>prisma db push</code>) antes de restaurar los datos. La acción queda registrada en el log de auditoría.
             </p>
 
             {dlError && (
@@ -215,6 +217,12 @@ export default function AdminBackupPage() {
                   <div><span style={{ color: "var(--text2)" }}>Entorno: </span>{parsedBackup.backup_info.environment}</div>
                   <div><span style={{ color: "var(--text2)" }}>Total registros: </span><strong>{parsedBackup.backup_info.total_records_exported.toLocaleString()}</strong></div>
                   <div><span style={{ color: "var(--text2)" }}>Tablas: </span>{parsedBackup.backup_info.exported_entities_count}</div>
+                  <div>
+                    <span style={{ color: "var(--text2)" }}>Esquema de BD incluido: </span>
+                    {parsedBackup.backup_info.schema_included
+                      ? <strong style={{ color: "var(--accent)" }}>Sí</strong>
+                      : <strong style={{ color: "#facc15" }}>No</strong>}
+                  </div>
                 </div>
 
                 {/* Tablas con datos */}
