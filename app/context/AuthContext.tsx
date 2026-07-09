@@ -26,11 +26,13 @@ interface AuthContextType {
     rut: string;
     dv_rut: string;
     phone: string;
-    name: string;
+    nombre: string;
+    apellido: string;
+    username: string;
     email?: string;
     password: string;
     zone: string;
-    gender: "masculino" | "femenino";
+    gender: "Masculino" | "Femenino";
     birth_date?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
@@ -68,11 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rut: string;
     dv_rut: string;
     phone: string;
-    name: string;
+    nombre: string;
+    apellido: string;
+    username: string;
     email?: string;
     password: string;
     zone: string;
-    gender: "masculino" | "femenino";
+    gender: "Masculino" | "Femenino";
     birth_date?: string;
   }) => {
     const { user } = await registerUser(data);

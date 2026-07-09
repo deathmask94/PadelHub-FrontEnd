@@ -6,9 +6,11 @@ export interface User {
   dv_rut: string;
   phone: string;
   name: string;
+  last_name: string | null;
+  username: string | null;
   photo_url: string | null;
   level: string;
-  gender: "masculino" | "femenino" | null;
+  gender: "Masculino" | "Femenino" | null;
   zone: string;
   mmr: number;
   role: string;
@@ -147,11 +149,13 @@ export async function registerUser(params: {
   rut: string;
   dv_rut: string;
   phone: string;
-  name: string;
+  nombre: string;
+  apellido: string;
+  username: string;
   email?: string;
   password: string;
   zone: string;
-  gender: "masculino" | "femenino";
+  gender: "Masculino" | "Femenino";
   birth_date?: string;
 }): Promise<{ user: FrontendUser }> {
   const data = await apiFetch<{ user: User; token: string; refreshToken: string }>('/api/users', {

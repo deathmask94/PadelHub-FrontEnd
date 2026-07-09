@@ -74,7 +74,7 @@ export default function CrearPartido() {
   const [showTime,       setShowTime]       = useState(false);
 
   const [formato,        setFormato]        = useState<"dobles"|"individual">("dobles");
-  const [generoRival,    setGeneroRival]    = useState<"" | "masculino" | "femenino">("");
+  const [generoRival,    setGeneroRival]    = useState<"" | "Masculino" | "Femenino">("");
   const [jugadores,      setJugadores]      = useState<(PlayerOption|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
   const [pickerSearch,   setPickerSearch]   = useState("");
@@ -370,8 +370,8 @@ export default function CrearPartido() {
             <div style={{ display:"flex", gap:8 }}>
               {([
                 { value: "" as const,          label: "Todos" },
-                { value: "masculino" as const, label: "Hombres" },
-                { value: "femenino" as const,  label: "Mujeres" },
+                { value: "Masculino" as const, label: "Hombres" },
+                { value: "Femenino" as const,  label: "Mujeres" },
               ]).map((opt) => (
                 <button key={opt.label} type="button"
                   onClick={() => setGeneroRival(opt.value)}

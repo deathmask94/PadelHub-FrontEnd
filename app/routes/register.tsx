@@ -14,12 +14,14 @@ export default function RegisterPage() {
 
   const [form, setForm] = useState({
     nombre:          "",
+    apellido:        "",
+    username:        "",
     rutBody:         "",
     rutDv:           "",
     fechaNacimiento: "",
     telefono:        "",
     email:           "",
-    genero:          "" as "" | "masculino" | "femenino",
+    genero:          "" as "" | "Masculino" | "Femenino",
     nivel:           "Principiante",
     ciudad:          "",
     password:        "",
@@ -29,8 +31,19 @@ export default function RegisterPage() {
   const set = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
 
-  const setGenero = (v: "masculino" | "femenino") =>
+  const setGenero = (v: "Masculino" | "Femenino") =>
     setForm((p) => ({ ...p, genero: v }));
+
+  const setTelefono = (v: string) => {
+    const digits = v.replace(/\D/g, "").slice(0, 9);
+    if (digits.length > 0 && digits[0] !== "9") return;
+    setForm((p) => ({ ...p, telefono: digits }));
+  };
+
+  const setUsername = (v: string) => {
+    const cleaned = v.toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9._]/g, "").slice(0, 24);
+    setForm((p) => ({ ...p, username: cleaned }));
+  };
 
   const MAX_BIRTH_DATE = (() => {
     const d = new Date();
@@ -40,11 +53,13 @@ export default function RegisterPage() {
 
   const handleNextStep = () => {
     setError("");
-    if (!form.nombre.trim())                        return setError("Ingresa tu nombre completo.");
+    if (!form.nombre.trim() || form.nombre.trim().length < 2)     return setError("Ingresa tu nombre.");
+    if (!form.apellido.trim() || form.apellido.trim().length < 2) return setError("Ingresa tu apellido.");
+    if (form.username.length < 3)                   return setError("El nombre de usuario debe tener al menos 3 caracteres.");
     if (!form.rutBody.trim() || !form.rutDv.trim()) return setError("Ingresa tu RUT completo.");
     if (!form.fechaNacimiento)                      return setError("Ingresa tu fecha de nacimiento.");
     if (form.fechaNacimiento > MAX_BIRTH_DATE)      return setError("Debes tener al menos 10 años.");
-    if (!form.telefono.trim())                      return setError("Ingresa tu número de teléfono.");
+    if (!/^9\d{8}$/.test(form.telefono))            return setError("El teléfono debe empezar con 9 y tener 9 dígitos en total.");
     if (!form.email.trim())                         return setError("Ingresa tu correo electrónico.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError("El correo electrónico no es válido.");
     if (!form.genero)                               return setError("Selecciona tu género.");
@@ -64,12 +79,14 @@ export default function RegisterPage() {
       await register({
         rut:        form.rutBody,
         dv_rut:     form.rutDv.toUpperCase(),
-        phone:      form.telefono.replace(/\D/g, ""),
-        name:       form.nombre,
+        phone:      form.telefono,
+        nombre:     form.nombre,
+        apellido:   form.apellido,
+        username:   form.username,
         email:      form.email.toLowerCase().trim(),
         password:   form.password,
         zone:       form.ciudad,
-        gender:     form.genero as "masculino" | "femenino",
+        gender:     form.genero as "Masculino" | "Femenino",
         birth_date: form.fechaNacimiento || undefined,
       });
       // Asegurar que la pantalla se vea al menos 2 segundos
@@ -149,8 +166,25 @@ export default function RegisterPage() {
         {step === 1 && (
           <form className="fade-up-2" onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}>
             <div className="ph-input-group">
-              <label className="ph-label" htmlFor="reg-nombre">Nombre completo</label>
-              <input id="reg-nombre" name="name" className="ph-input" type="text" placeholder="Juan Pérez" value={form.nombre} onChange={(e) => set("nombre", e.target.value)} autoComplete="name" />
+              <label className="ph-label" htmlFor="reg-nombre">Nombre</label>
+              <input id="reg-nombre" name="name" className="ph-input" type="text" placeholder="Juan" value={form.nombre} onChange={(e) => set("nombre", e.target.value)} autoComplete="given-name" maxLength={25} />
+            </div>
+
+            <div className="ph-input-group">
+              <label className="ph-label" htmlFor="reg-apellido">Apellido</label>
+              <input id="reg-apellido" name="last_name" className="ph-input" type="text" placeholder="Pérez" value={form.apellido} onChange={(e) => set("apellido", e.target.value)} autoComplete="family-name" maxLength={25} />
+            </div>
+
+            <div className="ph-input-group">
+              <label className="ph-label" htmlFor="reg-username">Nombre de usuario</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: "var(--text2)", fontFamily: "var(--font-body)" }}>@</span>
+                <input id="reg-username" name="username" className="ph-input" type="text" placeholder="juanperez" style={{ flex: 1 }}
+                  value={form.username} onChange={(e) => setUsername(e.target.value)} autoComplete="off" maxLength={24} />
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 4 }}>
+                Único e irrepetible — te van a poder desafiar buscando este usuario.
+              </div>
             </div>
 
             <div className="ph-input-group">
@@ -179,7 +213,7 @@ export default function RegisterPage() {
 
             <div className="ph-input-group">
               <label className="ph-label" htmlFor="reg-phone">Número de teléfono</label>
-              <input id="reg-phone" name="phone" className="ph-input" type="tel" placeholder="+56912345678" value={form.telefono} onChange={(e) => set("telefono", e.target.value)} autoComplete="tel" />
+              <input id="reg-phone" name="phone" className="ph-input" type="tel" placeholder="912345678" value={form.telefono} onChange={(e) => setTelefono(e.target.value)} autoComplete="tel" inputMode="numeric" maxLength={9} />
             </div>
 
             <div className="ph-input-group">
@@ -190,7 +224,7 @@ export default function RegisterPage() {
             <div className="ph-input-group">
               <label className="ph-label">Género</label>
               <div style={{ display: "flex", gap: 10 }}>
-                {(["masculino", "femenino"] as const).map((g) => (
+                {(["Masculino", "Femenino"] as const).map((g) => (
                   <button
                     key={g}
                     type="button"
@@ -198,7 +232,7 @@ export default function RegisterPage() {
                     className={`ph-format-opt${form.genero === g ? " selected" : ""}`}
                     style={{ flex: 1, padding: "10px 0" }}
                   >
-                    {g === "masculino" ? "Hombre" : "Mujer"}
+                    {g === "Masculino" ? "Hombre" : "Mujer"}
                   </button>
                 ))}
               </div>

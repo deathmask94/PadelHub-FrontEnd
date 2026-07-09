@@ -46,7 +46,7 @@ export default function Matchmaking() {
   const [suggestions,  setSuggestions]  = useState<Suggestion[]>([]);
   const [index,        setIndex]        = useState(0);
   const [toast,        setToast]        = useState("");
-  const [generoBusqueda, setGeneroBusqueda] = useState<"" | "masculino" | "femenino">("");
+  const [generoBusqueda, setGeneroBusqueda] = useState<"" | "Masculino" | "Femenino">("");
 
   // Challenge form
   const [clubInput,   setClubInput]   = useState("");
@@ -187,8 +187,8 @@ export default function Matchmaking() {
                 <div style={{ display: "flex", gap: 8 }}>
                   {([
                     { value: "" as const,          label: "Todos" },
-                    { value: "masculino" as const, label: "Hombres" },
-                    { value: "femenino" as const,  label: "Mujeres" },
+                    { value: "Masculino" as const, label: "Hombres" },
+                    { value: "Femenino" as const,  label: "Mujeres" },
                   ]).map((opt) => (
                     <button key={opt.label} type="button"
                       onClick={() => setGeneroBusqueda(opt.value)}

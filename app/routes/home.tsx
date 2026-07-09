@@ -334,7 +334,7 @@ export default function Home() {
                       <div style={{ display: "flex", gap: 6 }}>
                         {m.gender_preference && (
                           <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
-                            {m.gender_preference === "masculino" ? "Solo hombres" : "Solo mujeres"}
+                            {m.gender_preference === "Masculino" ? "Solo hombres" : "Solo mujeres"}
                           </span>
                         )}
                         <span className="ph-pill ph-pill-green" style={{ fontSize: 10 }}>Abierto</span>

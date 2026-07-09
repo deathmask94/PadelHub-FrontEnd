@@ -6,7 +6,7 @@ export interface Match {
   club: string;
   format: 'doubles' | 'singles';
   status: 'open' | 'confirmed' | 'in_progress' | 'finished' | 'cancelled';
-  gender_preference?: 'masculino' | 'femenino' | null;
+  gender_preference?: 'Masculino' | 'Femenino' | null;
   match_date: string;
   match_time: string;
   created_at: string;
@@ -24,7 +24,7 @@ export interface CreateMatchPayload {
   format?: 'doubles' | 'singles';
   match_date: string;
   match_time: string;
-  gender_preference?: 'masculino' | 'femenino';
+  gender_preference?: 'Masculino' | 'Femenino';
 }
 
 export interface MatchFilters {
