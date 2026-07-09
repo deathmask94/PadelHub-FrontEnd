@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch } from "~/services/auth";
+import { joinMatch } from "~/services/matches";
 
 const DIAS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -50,7 +51,7 @@ function StarRating({ value, onChange, label }: { value: number; onChange: (v: n
     </div>
   );
 }
-interface SearchUser { id: string; name: string; photo_url: string | null; level: string; mmr: number; zone: string; }
+interface SearchUser { id: string; name: string; username: string | null; photo_url: string | null; level: string; mmr: number; zone: string; }
 
 const STATUS_LABEL: Record<string, string> = {
   open: "Abierto", confirmed: "Confirmado",
@@ -90,6 +91,7 @@ export default function MatchDetail() {
   const [inviting,    setInviting]    = useState<string | null>(null);
 
   const [responding,  setResponding]  = useState(false);
+  const [joining,     setJoining]     = useState(false);
 
   const [resultForm,  setResultForm]  = useState({
     organizer_team: "" as "team_a" | "team_b" | "",
@@ -222,6 +224,20 @@ export default function MatchDetail() {
     }
   };
 
+  const handleJoin = async () => {
+    if (!id) return;
+    setJoining(true);
+    try {
+      await joinMatch(id);
+      showToast("¡Te has unido al partido!");
+      await load();
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error al unirse");
+    } finally {
+      setJoining(false);
+    }
+  };
+
   const handleRespond = async (accept: boolean) => {
     if (!id) return;
     setResponding(true);
@@ -256,6 +272,7 @@ export default function MatchDetail() {
   const filledSlots  = 1 + activePlayers.length; // organizer + players
   const emptySlots   = maxPlayers - filledSlots;
   const canInvite    = match.is_organizer && match.status === "open" && emptySlots > 0;
+  const canJoin      = !match.is_organizer && match.my_status === null && match.status === "open" && emptySlots > 0;
 
   return (
     <div className="ph-screen">
@@ -327,6 +344,32 @@ export default function MatchDetail() {
                   {responding ? "…" : "✕ Rechazar"}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Unirse a un cupo abierto — jugador no invitado */}
+          {canJoin && (
+            <div style={{
+              background: "rgba(132,204,22,0.08)", border: "1px solid var(--border2)",
+              borderRadius: 12, padding: "14px 16px", marginBottom: 16,
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                🎾 Este partido tiene cupos abiertos
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12 }}>
+                ¿Quieres unirte?
+              </div>
+              <button
+                onClick={handleJoin}
+                disabled={joining}
+                style={{
+                  width: "100%", padding: "9px 0", borderRadius: 8, border: "none",
+                  background: "var(--accent)", color: "#fff",
+                  fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                }}
+              >
+                {joining ? "Uniéndote…" : "Unirse al partido"}
+              </button>
             </div>
           )}
 
@@ -404,7 +447,7 @@ export default function MatchDetail() {
                 <input
                   className="ph-input"
                   type="text"
-                  placeholder="Buscar por nombre…"
+                  placeholder="Buscar por @usuario…"
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
                   style={{ marginBottom: 8 }}
@@ -442,7 +485,7 @@ export default function MatchDetail() {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{u.name}</div>
                       <div style={{ fontSize: 11, color: "var(--text2)" }}>
-                        {NIVEL_LABEL[u.level] ?? u.level} · {u.mmr} MMR · {u.zone}
+                        {u.username ? `${u.username} · ` : ""}{NIVEL_LABEL[u.level] ?? u.level} · {u.mmr} MMR · {u.zone}
                       </div>
                     </div>
                     <button

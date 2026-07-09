@@ -8,6 +8,7 @@ import { createMatch } from "~/services/matches";
 interface PlayerOption {
   id: string;
   name: string;
+  username: string | null;
   photo_url: string | null;
   level: string;
   mmr: number;
@@ -431,7 +432,7 @@ export default function CrearPartido() {
                         <input
                           autoFocus
                           className="ph-input"
-                          placeholder="Buscar jugador…"
+                          placeholder="Buscar por @usuario…"
                           value={pickerSearch}
                           onChange={(e) => setPickerSearch(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -463,7 +464,9 @@ export default function CrearPartido() {
                             </div>
                             <div>
                               <div style={{ fontWeight:600 }}>{p.name}</div>
-                              <div style={{ fontSize:11, color:"var(--text2)" }}>{p.mmr} MMR</div>
+                              <div style={{ fontSize:11, color:"var(--text2)" }}>
+                                {p.username ? `${p.username} · ` : ""}{p.mmr} MMR
+                              </div>
                             </div>
                           </button>
                         ))}
