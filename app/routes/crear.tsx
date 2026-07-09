@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
-import { createMatch } from "~/services/matches";
+import { createMatch, invitePlayer } from "~/services/matches";
 
 interface PlayerOption {
   id: string;
@@ -176,7 +176,7 @@ export default function CrearPartido() {
       const matchDate = toDateKey(selectedDate);
       const matchTime = `${matchDate}T${selectedTime}:00`;
 
-      await createMatch({
+      const match = await createMatch({
         organizer_id: user.id,
         club:         selectedClub.nombre,
         format:       formato === "dobles" ? "doubles" : "singles",
@@ -185,7 +185,19 @@ export default function CrearPartido() {
         ...(generoRival ? { gender_preference: generoRival } : {}),
       });
 
-      showToastMsg("¡Partido creado! Ya aparece en Disponibles para todos los jugadores.");
+      const selectedPlayers = slots.filter((j): j is PlayerOption => j !== null);
+      const inviteResults = await Promise.allSettled(
+        selectedPlayers.map((j) => invitePlayer(match.id, j.id))
+      );
+      const failedInvites = inviteResults.filter((r) => r.status === "rejected").length;
+
+      if (selectedPlayers.length === 0) {
+        showToastMsg("¡Partido creado! Ya aparece en Disponibles para todos los jugadores.");
+      } else if (failedInvites > 0) {
+        showToastMsg(`Partido creado, pero no se pudo invitar a ${failedInvites} jugador(es).`);
+      } else {
+        showToastMsg("¡Partido creado! Invitaciones enviadas.");
+      }
       setTimeout(() => navigate("/home"), 1500);
     } catch (err: unknown) {
       showToastMsg(err instanceof Error ? err.message : "Error al crear el partido");
