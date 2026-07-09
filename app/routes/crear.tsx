@@ -25,9 +25,11 @@ function initials(name: string) {
 }
 
 const CLUBS = [
-  { nombre: "Viña Pádel Club",         abre: "09:00", cierra: "22:30" },
-  { nombre: "Campo Deportivo La Liga",  abre: "07:00", cierra: "23:00" },
-  { nombre: "BluePadel",               abre: "08:00", cierra: "23:00" },
+  { nombre: "Pádel Club Viña del Mar",  zona: "Viña del Mar",   abre: "09:00", cierra: "22:30" },
+  { nombre: "Pádel Club Valparaíso",    zona: "Valparaíso",     abre: "08:00", cierra: "22:00" },
+  { nombre: "Pádel Club Quilpué",       zona: "Quilpué",        abre: "07:00", cierra: "23:00" },
+  { nombre: "Pádel Club Villa Alemana", zona: "Villa Alemana",  abre: "08:00", cierra: "23:00" },
+  { nombre: "Pádel Club Concón",        zona: "Concón",         abre: "09:00", cierra: "21:00" },
 ];
 
 function getTimeSlots(abre: string, cierra: string): string[] {
@@ -165,7 +167,7 @@ export default function CrearPartido() {
   };
 
   const handleCrear = async () => {
-    if (!selectedClub) { showToastMsg("Selecciona un club"); return; }
+    if (!selectedClub) { showToastMsg("Selecciona tu ciudad"); return; }
     if (!selectedTime) { showToastMsg("Selecciona una hora"); return; }
     if (!user)         { showToastMsg("Debes iniciar sesión"); return; }
 
@@ -261,9 +263,9 @@ export default function CrearPartido() {
             </div>
           )}
 
-          {/* 2. Club / Recinto */}
+          {/* 2. Ciudad (la cancha se asigna automáticamente, 1 por ciudad) */}
           <div style={{ marginBottom:14 }}>
-            <label className="ph-label">Club / Recinto</label>
+            <label className="ph-label">Ciudad</label>
             <button
               onClick={()=>{setShowClubs(!showClubs);setShowCalendar(false);setShowTime(false);}}
               style={{
@@ -274,7 +276,7 @@ export default function CrearPartido() {
                 fontSize:14, fontFamily:"var(--font-body)", cursor:"pointer", textAlign:"left",
               }}
             >
-              {selectedClub?selectedClub.nombre:"Selecciona un club"}
+              {selectedClub?`${selectedClub.zona} — ${selectedClub.nombre}`:"Selecciona tu ciudad"}
             </button>
             {showClubs && (
               <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:12, marginTop:6, overflow:"hidden" }}>
@@ -287,8 +289,8 @@ export default function CrearPartido() {
                       color: selectedClub?.nombre===c.nombre?"var(--accent)":"var(--text)",
                       fontFamily:"var(--font-body)", fontSize:14,
                     }}>
-                    <div style={{ fontWeight:600 }}>{c.nombre}</div>
-                    <div style={{ fontSize:12, color:"var(--text2)", marginTop:2 }}>Lun–Dom · {c.abre} – {c.cierra}</div>
+                    <div style={{ fontWeight:600 }}>{c.zona}</div>
+                    <div style={{ fontSize:12, color:"var(--text2)", marginTop:2 }}>{c.nombre} · Lun–Dom · {c.abre} – {c.cierra}</div>
                   </button>
                 ))}
               </div>
@@ -310,7 +312,7 @@ export default function CrearPartido() {
                 cursor: selectedClub ? "pointer" : "not-allowed", textAlign:"left",
               }}
             >
-              {selectedClub ? (selectedTime || "Selecciona una hora") : "Elige el club primero"}
+              {selectedClub ? (selectedTime || "Selecciona una hora") : "Elige tu ciudad primero"}
             </button>
 
             {/* Selector hora */}

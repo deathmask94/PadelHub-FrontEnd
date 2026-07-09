@@ -10,6 +10,14 @@ const NIVEL_LABEL: Record<string, string> = {
   septima_mas: "7ma+ Categoría",
 };
 
+const CLUBS = [
+  { nombre: "Pádel Club Viña del Mar",  zona: "Viña del Mar" },
+  { nombre: "Pádel Club Valparaíso",    zona: "Valparaíso" },
+  { nombre: "Pádel Club Quilpué",       zona: "Quilpué" },
+  { nombre: "Pádel Club Villa Alemana", zona: "Villa Alemana" },
+  { nombre: "Pádel Club Concón",        zona: "Concón" },
+];
+
 interface Suggestion {
   id: string; name: string; photo_url: string | null;
   level: string; mmr: number; zone: string; compatibility: number;
@@ -299,14 +307,18 @@ export default function Matchmaking() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 12 }}>
                     Configurar partido vs {rival.name}
                   </div>
-                  <label className="ph-label">Club / Cancha</label>
-                  <input
-                    className="ph-input"
-                    placeholder="Ej: Club Pádel Viña"
+                  <label className="ph-label">Ciudad</label>
+                  <select
+                    className="ph-select"
                     value={clubInput}
                     onChange={(e) => setClubInput(e.target.value)}
                     style={{ marginBottom: 10 }}
-                  />
+                  >
+                    <option value="">Selecciona tu ciudad</option>
+                    {CLUBS.map((c) => (
+                      <option key={c.nombre} value={c.nombre}>{c.zona}</option>
+                    ))}
+                  </select>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
                     <div>
                       <label className="ph-label">Fecha</label>
