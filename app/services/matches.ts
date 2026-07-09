@@ -90,7 +90,16 @@ export async function respondInvitation(matchId: string, accept: boolean): Promi
   });
 }
 
-export async function getRanking(zone?: string): Promise<RankingEntry[]> {
-  const qs = zone ? `?zone=${encodeURIComponent(zone)}` : '';
-  return apiFetch<RankingEntry[]>(`/api/ranking${qs}`);
+export interface RankingPage {
+  players:    RankingEntry[];
+  total:      number;
+  page:       number;
+  pageSize:   number;
+  totalPages: number;
+}
+
+export async function getRanking(zone?: string, page = 1): Promise<RankingPage> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (zone) params.set('zone', zone);
+  return apiFetch<RankingPage>(`/api/ranking?${params.toString()}`);
 }

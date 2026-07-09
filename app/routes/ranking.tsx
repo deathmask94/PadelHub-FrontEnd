@@ -25,23 +25,29 @@ export default function Ranking() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [zona,      setZona]      = useState(user?.zona ?? "Valparaíso");
-  const [showZonas, setShowZonas] = useState(false);
-  const [data,      setData]      = useState<RankingEntry[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState("");
+  const [zona,       setZona]       = useState(user?.zona ?? "Valparaíso");
+  const [showZonas,  setShowZonas]  = useState(false);
+  const [data,       setData]       = useState<RankingEntry[]>([]);
+  const [page,       setPage]       = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState("");
+
+  useEffect(() => { setPage(1); }, [zona]);
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    getRanking(zona)
-      .then(setData)
+    getRanking(zona, page)
+      .then((res) => { setData(res.players); setTotalPages(res.totalPages); })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [zona]);
+  }, [zona, page]);
 
-  const podio = data.slice(0, 3);
-  const lista = data.slice(3);
+  // El podio (top 3) solo tiene sentido en la primera página; en el resto
+  // se muestra la lista plana continuando la numeración de posición.
+  const podio = page === 1 ? data.slice(0, 3) : [];
+  const lista = page === 1 ? data.slice(3) : data;
 
   return (
     <div className="ph-screen">
@@ -147,6 +153,37 @@ export default function Ranking() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Paginación */}
+          {!loading && data.length > 0 && totalPages > 1 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 16 }}>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                style={{
+                  background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10,
+                  padding: "8px 16px", fontSize: 13, color: page === 1 ? "var(--text2)" : "var(--text)",
+                  cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.5 : 1,
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                ← Anterior
+              </button>
+              <span style={{ fontSize: 13, color: "var(--text2)" }}>Página {page} de {totalPages}</span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={{
+                  background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10,
+                  padding: "8px 16px", fontSize: 13, color: page === totalPages ? "var(--text2)" : "var(--text)",
+                  cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.5 : 1,
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                Siguiente →
+              </button>
             </div>
           )}
 
