@@ -39,7 +39,7 @@ export default function Ranking() {
     setLoading(true);
     setError("");
     getRanking(zona, page)
-      .then((res) => { setData(res.players); setTotalPages(res.totalPages); })
+      .then((res) => { setData(res.players ?? []); setTotalPages(res.totalPages ?? 1); })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [zona, page]);
