@@ -50,18 +50,26 @@ export default function AdminPartidosPage() {
   const [data,     setData]     = useState<PagedResult | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState("");
-  const [q,        setQ]        = useState("");
+  const [q,           setQ]           = useState("");
+  const [debouncedQ,  setDebouncedQ]  = useState("");
   const [zone,     setZone]     = useState("");
   const [status,   setStatus]   = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo,   setDateTo]   = useState("");
   const [page,     setPage]     = useState(1);
 
+  // Debounce: evita que una respuesta de una busqueda parcial vieja
+  // pise el resultado de la busqueda final por llegar fuera de orden.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const load = useCallback(async () => {
     setLoading(true); setError("");
     const qs = new URLSearchParams({
       page: String(page),
-      ...(q.length >= 2 ? { q }        : {}),
+      ...(debouncedQ.length >= 2 ? { q: debouncedQ } : {}),
       ...(zone           ? { zone }     : {}),
       ...(status         ? { status }   : {}),
       ...(dateFrom       ? { date_from: dateFrom } : {}),
@@ -74,10 +82,10 @@ export default function AdminPartidosPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, q, zone, status, dateFrom, dateTo]);
+  }, [page, debouncedQ, zone, status, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setPage(1); }, [q, zone, status, dateFrom, dateTo]);
+  useEffect(() => { setPage(1); }, [debouncedQ, zone, status, dateFrom, dateTo]);
 
   return (
     <AdminLayout>

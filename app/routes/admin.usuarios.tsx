@@ -32,17 +32,26 @@ export default function AdminUsuariosPage() {
   const [data,    setData]    = useState<PagedResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
-  const [q,       setQ]       = useState("");
+  const [q,           setQ]           = useState("");
+  const [debouncedQ,  setDebouncedQ]  = useState("");
   const [zone,    setZone]    = useState("");
   const [level,   setLevel]   = useState("");
   const [status,  setStatus]  = useState("all");
   const [page,    setPage]    = useState(1);
 
+  // Debounce de la busqueda: sin esto, cada tecla dispara un fetch y una
+  // respuesta vieja (de una busqueda parcial) puede llegar despues que la
+  // nueva y pisar el resultado correcto.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const load = useCallback(async () => {
     setLoading(true); setError("");
     const qs = new URLSearchParams({
       page: String(page),
-      ...(q.length >= 2 ? { q } : {}),
+      ...(debouncedQ.length >= 2 ? { q: debouncedQ } : {}),
       ...(zone  ? { zone }  : {}),
       ...(level ? { level } : {}),
       ...(status !== "all" ? { status } : {}),
@@ -55,12 +64,12 @@ export default function AdminUsuariosPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, q, zone, level, status]);
+  }, [page, debouncedQ, zone, level, status]);
 
   useEffect(() => { load(); }, [load]);
 
   // Resetear página al cambiar filtros
-  useEffect(() => { setPage(1); }, [q, zone, level, status]);
+  useEffect(() => { setPage(1); }, [debouncedQ, zone, level, status]);
 
   const initials = (name: string) =>
     name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
