@@ -782,10 +782,10 @@ export default function MatchDetail() {
                 ].filter((p) => p.id !== user?.id);
 
                 const setRating = (playerId: string, field: keyof RatingValues, value: number) =>
-                  setRatings((prev) => ({
-                    ...prev,
-                    [playerId]: { fair_play: 3, punctuality: 3, skill_level: 3, ...prev[playerId], [field]: value },
-                  }));
+                  setRatings((prev) => {
+                    const base: RatingValues = prev[playerId] ?? { fair_play: 3, punctuality: 3, skill_level: 3 };
+                    return { ...prev, [playerId]: { ...base, [field]: value } };
+                  });
 
                 const allRated = toRate.length > 0 && toRate.every((p) => ratings[p.id]);
 

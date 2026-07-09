@@ -9,7 +9,6 @@ import {
 
 import type { Route } from "./+types/root";
 import { AuthProvider, useAuth } from "~/context/AuthContext";
-import { PartidosProvider } from "~/context/PartidosContext";
 import { NotificationsProvider } from "~/context/NotificationsContext";
 import ProtectedRoute from "~/components/ui/ProtectedRoute";
 import "./app.css";
@@ -51,17 +50,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Accede al userId ya resuelto por AuthProvider antes de montar PartidosProvider
 function AppWithProviders() {
   const { user } = useAuth();
   return (
-    <PartidosProvider userId={user?.id}>
-      <NotificationsProvider enabled={!!user}>
-        <ProtectedRoute>
-          <Outlet />
-        </ProtectedRoute>
-      </NotificationsProvider>
-    </PartidosProvider>
+    <NotificationsProvider enabled={!!user}>
+      <ProtectedRoute>
+        <Outlet />
+      </ProtectedRoute>
+    </NotificationsProvider>
   );
 }
 
