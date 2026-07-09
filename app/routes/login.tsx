@@ -83,26 +83,28 @@ export default function LoginPage() {
         </div>
 
         {/* Formulario */}
-        <div className="fade-up-2">
+        <form className="fade-up-2" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
           {error && <div className="ph-error">⚠️ {error}</div>}
 
           <div className="ph-input-group">
-            <label className="ph-label">RUT (sin puntos ni dígito verificador)</label>
+            <label className="ph-label" htmlFor="login-rut">RUT (sin puntos ni dígito verificador)</label>
             <input
+              id="login-rut" name="rut"
               className="ph-input" type="text" placeholder="12345678"
               value={rut} onChange={(e) => setRut(e.target.value)} autoComplete="username"
             />
           </div>
 
           <div className="ph-input-group">
-            <label className="ph-label">Contraseña</label>
+            <label className="ph-label" htmlFor="login-password">Contraseña</label>
             <input
+              id="login-password" name="password"
               className="ph-input" type="password" placeholder="••••••••"
               value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password"
             />
           </div>
 
-          <button className="ph-btn" onClick={handleSubmit} disabled={submitting}>
+          <button className="ph-btn" type="submit" disabled={submitting}>
             {submitting ? "Entrando…" : "Entrar"}
           </button>
 
@@ -117,7 +119,7 @@ export default function LoginPage() {
           >
             ¿Olvidaste tu contraseña?
           </button>
-        </div>
+        </form>
 
       </div>
     </div>

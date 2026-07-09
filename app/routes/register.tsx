@@ -147,26 +147,28 @@ export default function RegisterPage() {
 
         {/* PASO 1 */}
         {step === 1 && (
-          <div className="fade-up-2">
+          <form className="fade-up-2" onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}>
             <div className="ph-input-group">
-              <label className="ph-label">Nombre completo</label>
-              <input className="ph-input" type="text" placeholder="Juan Pérez" value={form.nombre} onChange={(e) => set("nombre", e.target.value)} />
+              <label className="ph-label" htmlFor="reg-nombre">Nombre completo</label>
+              <input id="reg-nombre" name="name" className="ph-input" type="text" placeholder="Juan Pérez" value={form.nombre} onChange={(e) => set("nombre", e.target.value)} autoComplete="name" />
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">RUT</label>
+              <label className="ph-label" htmlFor="reg-rut">RUT</label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input className="ph-input" type="text" placeholder="12345678" style={{ flex: 1 }}
+                <input id="reg-rut" name="rut" className="ph-input" type="text" placeholder="12345678" style={{ flex: 1 }}
                   value={form.rutBody} onChange={(e) => set("rutBody", e.target.value.replace(/\D/g, ""))} />
                 <span style={{ color: "var(--text)" }}>-</span>
-                <input className="ph-input" type="text" placeholder="K" style={{ width: 45, textAlign: "center" }}
+                <label className="sr-only" htmlFor="reg-rut-dv">Dígito verificador</label>
+                <input id="reg-rut-dv" name="dv_rut" className="ph-input" type="text" placeholder="K" style={{ width: 45, textAlign: "center" }}
                   maxLength={1} value={form.rutDv} onChange={(e) => set("rutDv", e.target.value)} />
               </div>
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Fecha de nacimiento</label>
+              <label className="ph-label" htmlFor="reg-birth">Fecha de nacimiento</label>
               <input
+                id="reg-birth" name="birth_date"
                 className="ph-input"
                 type="date"
                 max={MAX_BIRTH_DATE}
@@ -176,13 +178,13 @@ export default function RegisterPage() {
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Número de teléfono</label>
-              <input className="ph-input" type="tel" placeholder="+56912345678" value={form.telefono} onChange={(e) => set("telefono", e.target.value)} />
+              <label className="ph-label" htmlFor="reg-phone">Número de teléfono</label>
+              <input id="reg-phone" name="phone" className="ph-input" type="tel" placeholder="+56912345678" value={form.telefono} onChange={(e) => set("telefono", e.target.value)} autoComplete="tel" />
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Correo electrónico</label>
-              <input className="ph-input" type="email" placeholder="tucorreo@email.com" value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" />
+              <label className="ph-label" htmlFor="reg-email">Correo electrónico</label>
+              <input id="reg-email" name="email" className="ph-input" type="email" placeholder="tucorreo@email.com" value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" />
             </div>
 
             <div className="ph-input-group">
@@ -202,7 +204,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <button className="ph-btn" type="button" onClick={handleNextStep} style={{ marginTop: 12 }}>
+            <button className="ph-btn" type="submit" style={{ marginTop: 12 }}>
               Siguiente paso →
             </button>
 
@@ -213,15 +215,15 @@ export default function RegisterPage() {
             >
               ¿Ya tienes cuenta? Inicia sesión
             </button>
-          </div>
+          </form>
         )}
 
         {/* PASO 2 */}
         {step === 2 && (
-          <div className="fade-up-2">
+          <form className="fade-up-2" onSubmit={(e) => { e.preventDefault(); handleSubmitFinal(); }}>
             <div className="ph-input-group">
-              <label className="ph-label">Nivel estimado</label>
-              <select className="ph-input" style={{ background: "var(--bg3)", color: "var(--text)", width: "100%" }}
+              <label className="ph-label" htmlFor="reg-nivel">Nivel estimado</label>
+              <select id="reg-nivel" name="level" className="ph-input" style={{ background: "var(--bg3)", color: "var(--text)", width: "100%" }}
                 value={form.nivel} onChange={(e) => set("nivel", e.target.value)}>
                 <option value="Principiante">Principiante</option>
                 <option value="Intermedio">Intermedio</option>
@@ -230,8 +232,8 @@ export default function RegisterPage() {
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Zona</label>
-              <select className="ph-select" value={form.ciudad} onChange={(e) => set("ciudad", e.target.value)}>
+              <label className="ph-label" htmlFor="reg-zona">Zona</label>
+              <select id="reg-zona" name="zone" className="ph-select" value={form.ciudad} onChange={(e) => set("ciudad", e.target.value)}>
                 <option value="">Selecciona tu zona</option>
                 <option value="Viña del Mar">Viña del Mar</option>
                 <option value="Valparaíso">Valparaíso</option>
@@ -242,18 +244,18 @@ export default function RegisterPage() {
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Contraseña</label>
-              <input className="ph-input" type="password" placeholder="Mínimo 8 caracteres"
+              <label className="ph-label" htmlFor="reg-password">Contraseña</label>
+              <input id="reg-password" name="password" className="ph-input" type="password" placeholder="Mínimo 8 caracteres"
                 value={form.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" />
             </div>
 
             <div className="ph-input-group">
-              <label className="ph-label">Confirmar contraseña</label>
-              <input className="ph-input" type="password" placeholder="Repite tu contraseña"
+              <label className="ph-label" htmlFor="reg-confirm-password">Confirmar contraseña</label>
+              <input id="reg-confirm-password" name="confirm_password" className="ph-input" type="password" placeholder="Repite tu contraseña"
                 value={form.confirmPassword} onChange={(e) => set("confirmPassword", e.target.value)} autoComplete="new-password" />
             </div>
 
-            <button className="ph-btn" type="button" disabled={submitting} onClick={handleSubmitFinal} style={{ marginTop: 12 }}>
+            <button className="ph-btn" type="submit" disabled={submitting} style={{ marginTop: 12 }}>
               {submitting ? "Registrando jugador…" : "Crear cuenta"}
             </button>
 
@@ -261,7 +263,7 @@ export default function RegisterPage() {
               style={{ marginTop: 6, border: "none", background: "transparent", width: "100%" }}>
               ← Volver a datos personales
             </button>
-          </div>
+          </form>
         )}
 
       </div>

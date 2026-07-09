@@ -94,7 +94,6 @@ export default function Home() {
 
   const proximoPartido =
     myMatches.find((m) => m.status === "open" || m.status === "confirmed") ??
-    matches.find((m) => m.status === "open" || m.status === "confirmed") ??
     null;
 
   return (
