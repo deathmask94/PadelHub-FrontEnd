@@ -17,7 +17,10 @@ function formatDate(s: string) {
   return `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]}`;
 }
 function formatTime(s: string) {
-  return new Date(s).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
+  // La hora del partido es "hora de pared" (Chile), no un instante UTC que
+  // deba reconvertirse a la zona horaria del navegador — se lee tal cual.
+  const d = new Date(s);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 interface PlayerUser { id: string; name: string; photo_url: string | null; level: string; mmr: number; }
@@ -86,6 +89,7 @@ export default function MatchDetail() {
 
   const [searchQ,     setSearchQ]     = useState("");
   const [searchLevel, setSearchLevel] = useState("");
+  const [inviteTeam,  setInviteTeam]  = useState<"" | "team_a" | "team_b">("");
   const [results,     setResults]     = useState<SearchUser[]>([]);
   const [searching,   setSearching]   = useState(false);
   const [inviting,    setInviting]    = useState<string | null>(null);
@@ -159,7 +163,7 @@ export default function MatchDetail() {
     try {
       await apiFetch(`/api/matches/${id}/invite`, {
         method: "POST",
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId, ...(inviteTeam ? { team: inviteTeam } : {}) }),
       });
       showToast("Invitación enviada");
       setSearchQ(""); setResults([]);
@@ -444,6 +448,26 @@ export default function MatchDetail() {
                 Invitar jugador
               </div>
               <div className="ph-card" style={{ marginBottom: 16 }}>
+                {match.format === "doubles" && (
+                  <div style={{ marginBottom: 10 }}>
+                    <label className="ph-label">Equipo (opcional)</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {([
+                        { value: "" as const,        label: "Automático" },
+                        { value: "team_a" as const,  label: "Equipo A" },
+                        { value: "team_b" as const,  label: "Equipo B" },
+                      ]).map((opt) => (
+                        <button key={opt.label} type="button"
+                          onClick={() => setInviteTeam(opt.value)}
+                          className={`ph-format-opt${inviteTeam === opt.value ? " selected" : ""}`}
+                          style={{ flex: 1, padding: "8px 0", fontSize: 12 }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <input
                   className="ph-input"
                   type="text"

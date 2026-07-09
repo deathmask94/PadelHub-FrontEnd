@@ -16,10 +16,7 @@ const NIVELES: Record<string, string> = {
   primera: "1ra", segunda: "2da", tercera: "3ra",
   cuarta: "4ta", quinta: "5ta", sexta: "6ta", septima_mas: "7ma+",
 };
-const ZONAS = [
-  "Valparaíso","Viña del Mar","Quilpué","Villa Alemana",
-  "Concón","Santiago Centro","Providencia","Las Condes",
-];
+const ZONAS = ["Valparaíso","Viña del Mar","Quilpué","Villa Alemana","Concón"];
 
 const sel: React.CSSProperties = {
   background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8,

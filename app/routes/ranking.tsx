@@ -4,10 +4,7 @@ import { useAuth } from "~/context/AuthContext";
 import NavBar from "~/components/ui/NavBar";
 import { getRanking, type RankingEntry } from "~/services/matches";
 
-const ZONAS = [
-  "Valparaíso","Viña del Mar","Quilpué","Villa Alemana",
-  "Concón","Santiago Centro","Providencia","Las Condes",
-];
+const ZONAS = ["Valparaíso","Viña del Mar","Quilpué","Villa Alemana","Concón"];
 const MEDAL = ["🥇", "🥈", "🥉"];
 
 const AVATAR_COLORS = [

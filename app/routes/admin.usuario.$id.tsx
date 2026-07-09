@@ -20,10 +20,7 @@ const NIVELES = [
   { key: "sexta",      label: "6ta Categoría" },
   { key: "septima_mas",label: "7ma+ Categoría" },
 ];
-const ZONAS = [
-  "Valparaíso","Viña del Mar","Quilpué","Villa Alemana",
-  "Concón","Santiago Centro","Providencia","Las Condes",
-];
+const ZONAS = ["Valparaíso","Viña del Mar","Quilpué","Villa Alemana","Concón"];
 
 const sel: React.CSSProperties = {
   background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8,

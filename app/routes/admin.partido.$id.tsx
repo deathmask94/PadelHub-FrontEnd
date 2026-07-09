@@ -47,7 +47,8 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
 }
 function fmtTime(iso: string) {
-  return new Date(`1970-01-01T${iso}`).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+  const d = new Date(iso);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {

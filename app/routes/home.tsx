@@ -11,10 +11,7 @@ const NIVEL_LABEL: Record<string, string> = {
   primera: "1ra", segunda: "2da", tercera: "3ra",
   cuarta: "4ta", quinta: "5ta", sexta: "6ta", septima_mas: "7ma+",
 };
-const ZONAS = [
-  "Valparaíso","Viña del Mar","Quilpué","Villa Alemana",
-  "Concón","Santiago Centro","Providencia","Las Condes",
-];
+const ZONAS = ["Valparaíso","Viña del Mar","Quilpué","Villa Alemana","Concón"];
 
 function formatMatchDate(dateStr: string): string {
   const d = new Date(dateStr);

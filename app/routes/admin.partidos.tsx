@@ -33,10 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
   finished:    "var(--text2)",
   cancelled:   "#ef4444",
 };
-const ZONAS = [
-  "Valparaíso","Viña del Mar","Quilpué","Villa Alemana",
-  "Concón","Santiago Centro","Providencia","Las Condes",
-];
+const ZONAS = ["Valparaíso","Viña del Mar","Quilpué","Villa Alemana","Concón"];
 const sel: React.CSSProperties = {
   background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8,
   color: "var(--text)", fontSize: 12, padding: "6px 10px", fontFamily: "var(--font-body)",
