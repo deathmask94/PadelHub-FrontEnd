@@ -18,20 +18,21 @@ const NIVEL_LABEL: Record<string, string> = {
   septima_mas: "7ma+ Categoría",
 };
 
+interface MatchTally { played: number; wins: number; losses: number; }
 interface RankingStats {
   ranking_position:  number;
   total_in_zone:     number;
   mmr_variation_30d: number;
-  matches_played:    number;
-  wins:              number;
+  competitive:       MatchTally;
+  casual:            MatchTally;
   mmr_chart:         number[];
   last_matches:      { club: string | null; date: string | null; delta: number; win: boolean }[];
 }
 interface PlayerRatings {
-  avg_fair_play:   number | null;
-  avg_punctuality: number | null;
-  avg_skill_level: number | null;
-  total:           number;
+  avg_fair_play:    number | null;
+  avg_punctuality:  number | null;
+  avg_companerismo: number | null;
+  total:            number;
 }
 
 function StarDisplay({ value }: { value: number | null }) {
@@ -93,10 +94,10 @@ export default function Perfil() {
     reminderEnabled !== (user?.reminder_enabled ?? true) ||
     photoFile !== null;
 
-  const matchesPlayed = stats?.matches_played ?? 0;
-  const victorias     = stats?.wins           ?? 0;
-  const esNuevo       = matchesPlayed === 0;
-  const lastMatches   = stats?.last_matches   ?? [];
+  const competitive = stats?.competitive ?? { played: 0, wins: 0, losses: 0 };
+  const casual      = stats?.casual      ?? { played: 0, wins: 0, losses: 0 };
+  const esNuevo     = competitive.played === 0 && casual.played === 0;
+  const lastMatches = stats?.last_matches ?? [];
   const mmrChart      = stats?.mmr_chart      ?? [];
   const semanas       = mmrChart.map((_, i) => `P${i + 1}`);
 
@@ -357,15 +358,38 @@ export default function Perfil() {
             )}
           </div>
 
-          {/* ── Stats ── */}
+          {/* ── Stats: Competitivo / Casual ── */}
+          <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+            Competitivos
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
             {[
-              { val: String(matchesPlayed),                                                                       label: "Partidos"  },
-              { val: esNuevo ? "—" : `${victorias}`,                                                              label: "Victorias" },
-              { val: esNuevo || !playerRatings?.avg_fair_play ? "—" : playerRatings.avg_fair_play.toFixed(1),    label: "Fair Play" },
+              { val: String(competitive.played), label: "Partidos"  },
+              { val: String(competitive.wins),    label: "Victorias" },
+              { val: String(competitive.losses),  label: "Derrotas"  },
             ].map((s) => (
               <div key={s.label} className="ph-card" style={{ textAlign: "center", padding: "14px 8px" }}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, marginBottom: 4, color: s.val === "—" ? "var(--text2)" : "var(--text)" }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, marginBottom: 4 }}>
+                  {s.val}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+            Casual
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+            {[
+              { val: String(casual.played), label: "Partidos"  },
+              { val: String(casual.wins),    label: "Victorias" },
+              { val: String(casual.losses),  label: "Derrotas"  },
+            ].map((s) => (
+              <div key={s.label} className="ph-card" style={{ textAlign: "center", padding: "14px 8px" }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, marginBottom: 4 }}>
                   {s.val}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.6 }}>
@@ -379,13 +403,13 @@ export default function Perfil() {
           {(playerRatings?.total ?? 0) > 0 && (
             <div className="ph-card" style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12 }}>
-                Reputación · {playerRatings!.total} valoraciones
+                Reputación
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 {[
-                  { label: "Fair Play",   val: playerRatings!.avg_fair_play   },
-                  { label: "Puntualidad", val: playerRatings!.avg_punctuality },
-                  { label: "Nivel",       val: playerRatings!.avg_skill_level },
+                  { label: "Fair Play",     val: playerRatings!.avg_fair_play    },
+                  { label: "Puntualidad",   val: playerRatings!.avg_punctuality  },
+                  { label: "Compañerismo",  val: playerRatings!.avg_companerismo },
                 ].map(({ label, val }) => (
                   <div key={label} style={{ textAlign: "center" }}>
                     <StarDisplay value={val} />
@@ -402,7 +426,7 @@ export default function Perfil() {
           <div className="ph-card" style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8 }}>
-                Evolución MMR — Últimas 7 semanas
+                Evolución MMR
               </div>
               {!esNuevo && (
                 <span
@@ -422,7 +446,7 @@ export default function Perfil() {
               </div>
             ) : (() => {
               const W = 300, H = 110;
-              const padL = 6, padR = 6, padT = 10, padB = 24;
+              const padL = 16, padR = 16, padT = 18, padB = 24;
               const cW = W - padL - padR;
               const cH = H - padT - padB;
               const minV = Math.min(...mmrChart);
@@ -438,7 +462,6 @@ export default function Perfil() {
               }));
               const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
               const area = `${line} L${pts[n-1].x.toFixed(1)},${(padT + cH).toFixed(1)} L${pts[0].x.toFixed(1)},${(padT + cH).toFixed(1)} Z`;
-              const last = pts[n - 1];
               return (
                 <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} aria-hidden>
                   <defs>
@@ -463,11 +486,17 @@ export default function Perfil() {
                       stroke={i === n - 1 ? "var(--bg, #1a1a1a)" : "none"}
                       strokeWidth="2" />
                   ))}
-                  {/* Last value label */}
-                  <text x={last.x} y={last.y - 8} textAnchor="middle"
-                    fontSize="9" fontWeight="700" fill="#84cc16">
-                    {mmrChart[n - 1]}
-                  </text>
+                  {/* Value labels — en todos los puntos, no solo el ultimo.
+                      El anchor cambia en los extremos para que el texto no
+                      se corte contra el borde del viewBox. */}
+                  {pts.map((p, i) => (
+                    <text key={i} x={p.x} y={Math.max(8, p.y - 8)}
+                      textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}
+                      fontSize="9" fontWeight={i === n - 1 ? 700 : 600}
+                      fill={i === n - 1 ? "#84cc16" : "rgba(132,204,22,0.75)"}>
+                      {mmrChart[i]}
+                    </text>
+                  ))}
                   {/* Week labels */}
                   {pts.map((p, i) => (
                     <text key={i} x={p.x} y={H - 4} textAnchor="middle"

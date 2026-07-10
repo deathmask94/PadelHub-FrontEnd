@@ -44,15 +44,17 @@ export default function ForgotPasswordPage() {
           ←
         </button>
 
-        <div className="fade-up" style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🔑</div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
-            ¿Olvidaste tu contraseña?
+        {!sent && (
+          <div className="fade-up" style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔑</div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+              ¿Olvidaste tu contraseña?
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text2)" }}>
+              Ingresa tu email y te enviaremos un enlace para restablecerla.
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: "var(--text2)" }}>
-            Ingresa tu email y te enviaremos un enlace para restablecerla.
-          </div>
-        </div>
+        )}
 
         {sent ? (
           <div className="fade-up" style={{ textAlign: "center" }}>

@@ -43,7 +43,7 @@ interface MatchDetail {
   } | null;
 }
 
-type RatingValues = { fair_play: number; punctuality: number; skill_level: number };
+type RatingValues = { fair_play: number; punctuality: number; companerismo: number };
 
 // Cada set guarda quien lo gano Y los games de cada equipo por separado,
 // para que nunca sea ambiguo (antes un solo campo de texto por equipo
@@ -208,7 +208,7 @@ export default function MatchDetail() {
       const next = { ...prev };
       let changed = false;
       for (const p of toRate) {
-        if (!next[p.id]) { next[p.id] = { fair_play: 5, punctuality: 5, skill_level: 5 }; changed = true; }
+        if (!next[p.id]) { next[p.id] = { fair_play: 5, punctuality: 5, companerismo: 5 }; changed = true; }
       }
       return changed ? next : prev;
     });
@@ -1092,7 +1092,7 @@ export default function MatchDetail() {
 
                 const setRating = (playerId: string, field: keyof RatingValues, value: number) =>
                   setRatings((prev) => {
-                    const base: RatingValues = prev[playerId] ?? { fair_play: 5, punctuality: 5, skill_level: 5 };
+                    const base: RatingValues = prev[playerId] ?? { fair_play: 5, punctuality: 5, companerismo: 5 };
                     return { ...prev, [playerId]: { ...base, [field]: value } };
                   });
 
@@ -1108,7 +1108,7 @@ export default function MatchDetail() {
                           rated_id:    p.id,
                           fair_play:   ratings[p.id]?.fair_play   ?? 5,
                           punctuality: ratings[p.id]?.punctuality ?? 5,
-                          skill_level: ratings[p.id]?.skill_level ?? 5,
+                          companerismo: ratings[p.id]?.companerismo ?? 5,
                         })),
                       }),
                     });
@@ -1125,7 +1125,7 @@ export default function MatchDetail() {
                 return (
                   <div className="ph-card" style={{ marginBottom: 8 }}>
                     {toRate.map((p, i) => {
-                      const r = ratings[p.id] ?? { fair_play: 5, punctuality: 5, skill_level: 5 };
+                      const r = ratings[p.id] ?? { fair_play: 5, punctuality: 5, companerismo: 5 };
                       return (
                         <div key={p.id} style={{
                           paddingBottom: 14, marginBottom: 14,
@@ -1136,9 +1136,9 @@ export default function MatchDetail() {
                             <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
                           </div>
                           <div style={{ display: "flex", gap: 10 }}>
-                            <StarRating label="Fair play"   value={r.fair_play}   onChange={(v) => setRating(p.id, "fair_play", v)} />
-                            <StarRating label="Puntualidad" value={r.punctuality} onChange={(v) => setRating(p.id, "punctuality", v)} />
-                            <StarRating label="Nivel"       value={r.skill_level} onChange={(v) => setRating(p.id, "skill_level", v)} />
+                            <StarRating label="Fair play"    value={r.fair_play}    onChange={(v) => setRating(p.id, "fair_play", v)} />
+                            <StarRating label="Puntualidad"  value={r.punctuality}  onChange={(v) => setRating(p.id, "punctuality", v)} />
+                            <StarRating label="Compañerismo" value={r.companerismo} onChange={(v) => setRating(p.id, "companerismo", v)} />
                           </div>
                         </div>
                       );
