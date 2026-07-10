@@ -277,9 +277,17 @@ export default function Home() {
             <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
               {proximoPartido.club}
             </div>
-            <div style={{ fontSize: 13, color: "var(--text2)" }}>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}>
               {formatTime(proximoPartido.match_time)} · {proximoPartido.format === "doubles" ? "Dobles" : "Individual"}
             </div>
+            <span className="ph-pill" style={{
+              fontSize: 10,
+              background: proximoPartido.is_ranked ? "rgba(132,204,22,0.1)" : "var(--bg3)",
+              color: proximoPartido.is_ranked ? "var(--accent)" : "var(--text2)",
+              border: `1px solid ${proximoPartido.is_ranked ? "var(--border2)" : "var(--border)"}`,
+            }}>
+              {proximoPartido.is_ranked ? "🏆 Competitivo" : "🎉 Casual"}
+            </span>
           </div>
         ) : (
           <div
@@ -414,9 +422,13 @@ export default function Home() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{m.club}</div>
                       <div style={{ display: "flex", gap: 6 }}>
-                        {m.is_ranked && (
+                        {m.is_ranked ? (
                           <span className="ph-pill" style={{ fontSize: 10, background: "rgba(132,204,22,0.1)", color: "var(--accent)", border: "1px solid var(--border2)" }}>
                             🏆 Competitivo
+                          </span>
+                        ) : (
+                          <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
+                            🎉 Casual
                           </span>
                         )}
                         {m.gender_preference && (
@@ -510,9 +522,20 @@ export default function Home() {
                           {formatMatchDate(m.match_date)} · {formatTime(m.match_time)}
                         </div>
                       </div>
-                      <span className={`ph-pill ${isPending ? "ph-pill-gray" : STATUS_CLASS[m.status] ?? "ph-pill-gray"}`} style={{ fontSize: 11 }}>
-                        {isPending ? "Invitación" : STATUS_LABEL[m.status]}
-                      </span>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        {m.is_ranked ? (
+                          <span className="ph-pill" style={{ fontSize: 10, background: "rgba(132,204,22,0.1)", color: "var(--accent)", border: "1px solid var(--border2)" }}>
+                            🏆
+                          </span>
+                        ) : (
+                          <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
+                            🎉
+                          </span>
+                        )}
+                        <span className={`ph-pill ${isPending ? "ph-pill-gray" : STATUS_CLASS[m.status] ?? "ph-pill-gray"}`} style={{ fontSize: 11 }}>
+                          {isPending ? "Invitación" : STATUS_LABEL[m.status]}
+                        </span>
+                      </div>
                     </div>
                     {isPending && (
                       <div style={{ display: "flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>

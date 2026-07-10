@@ -360,6 +360,11 @@ export default function MatchDetail() {
   const canInvite    = match.is_organizer && match.status === "open" && emptySlots > 0;
   const canJoin      = !match.is_organizer && match.my_status === null && match.status === "open" && emptySlots > 0;
 
+  // Cada equipo tiene cupo maximo de 2 en dobles; se usa para deshabilitar
+  // el equipo ya lleno al invitar y para exigir elegir el otro.
+  const teamACount = activePlayers.filter((p) => p.team === "team_a").length;
+  const teamBCount = activePlayers.filter((p) => p.team === "team_b").length;
+
   // Si el organizador tiene el resultado pendiente, no puede salir de la
   // pantalla sin registrarlo (ni saltarselo): el partido quedaria "en
   // curso" para siempre y nadie mas puede registrar el resultado por el.
@@ -513,12 +518,19 @@ export default function MatchDetail() {
                     {NIVEL_LABEL[mp.users.level] ?? mp.users.level} · {mp.users.mmr} MMR
                   </div>
                 </div>
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: mp.status === "confirmed" ? "var(--accent)" : "var(--text2)",
-                }}>
-                  {mp.status === "confirmed" ? "✓ Confirmado" : "⏳ Pendiente"}
-                </span>
+                <div style={{ textAlign: "right" }}>
+                  {match.format === "doubles" && (
+                    <div style={{ fontSize: 10, color: mp.team === "team_a" ? "#60a5fa" : "#f472b6", fontWeight: 700, marginBottom: 2 }}>
+                      {mp.team === "team_a" ? "Equipo A" : "Equipo B"}
+                    </div>
+                  )}
+                  <span style={{
+                    fontSize: 11, fontWeight: 600,
+                    color: mp.status === "confirmed" ? "var(--accent)" : "var(--text2)",
+                  }}>
+                    {mp.status === "confirmed" ? "✓ Confirmado" : "⏳ Pendiente"}
+                  </span>
+                </div>
               </div>
             ))}
 
@@ -552,22 +564,30 @@ export default function MatchDetail() {
               <div className="ph-card" style={{ marginBottom: 16 }}>
                 {match.format === "doubles" && (
                   <div style={{ marginBottom: 10 }}>
-                    <label className="ph-label">Equipo (opcional)</label>
+                    <label className="ph-label">Equipo</label>
                     <div style={{ display: "flex", gap: 8 }}>
                       {([
-                        { value: "" as const,        label: "Automático" },
-                        { value: "team_a" as const,  label: "Equipo A" },
-                        { value: "team_b" as const,  label: "Equipo B" },
-                      ]).map((opt) => (
-                        <button key={opt.label} type="button"
-                          onClick={() => setInviteTeam(opt.value)}
-                          className={`ph-format-opt${inviteTeam === opt.value ? " selected" : ""}`}
-                          style={{ flex: 1, padding: "8px 0", fontSize: 12 }}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
+                        { value: "team_a" as const, label: "Equipo A", count: teamACount },
+                        { value: "team_b" as const, label: "Equipo B", count: teamBCount },
+                      ]).map((opt) => {
+                        const full = opt.count >= 2;
+                        return (
+                          <button key={opt.label} type="button"
+                            disabled={full}
+                            onClick={() => setInviteTeam(opt.value)}
+                            className={`ph-format-opt${inviteTeam === opt.value ? " selected" : ""}`}
+                            style={{ flex: 1, padding: "8px 0", fontSize: 12, opacity: full ? 0.4 : 1, cursor: full ? "not-allowed" : "pointer" }}
+                          >
+                            {opt.label} {full ? "(lleno)" : `(${opt.count}/2)`}
+                          </button>
+                        );
+                      })}
                     </div>
+                    {!inviteTeam && (
+                      <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 6 }}>
+                        Elige un equipo antes de invitar a un jugador
+                      </div>
+                    )}
                   </div>
                 )}
                 <input
@@ -616,12 +636,13 @@ export default function MatchDetail() {
                     </div>
                     <button
                       onClick={() => handleInvite(u.id)}
-                      disabled={inviting === u.id}
+                      disabled={inviting === u.id || (match.format === "doubles" && !inviteTeam)}
                       style={{
                         padding: "6px 12px", borderRadius: 8, border: "none",
                         background: "rgba(132,204,22,0.12)", color: "var(--accent)",
                         fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
-                        cursor: "pointer",
+                        cursor: (match.format === "doubles" && !inviteTeam) ? "not-allowed" : "pointer",
+                        opacity: (match.format === "doubles" && !inviteTeam) ? 0.4 : 1,
                       }}
                     >
                       {inviting === u.id ? "…" : "Invitar"}
