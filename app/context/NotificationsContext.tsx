@@ -24,6 +24,8 @@ interface NotificationsContextType {
   loading: boolean;
   refresh: () => Promise<void>;
   markAllRead: () => void;
+  markRead: (id: string) => void;
+  dismiss: (id: string) => void;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | null>(null);
@@ -76,10 +78,29 @@ export function NotificationsProvider({
       .finally(() => { markingRef.current = false; });
   };
 
+  const markRead = (id: string) => {
+    markingRef.current = true;
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    apiFetch("/api/notifications", { method: "PATCH", body: JSON.stringify({ id }) })
+      .catch(() => {})
+      .finally(() => { markingRef.current = false; });
+  };
+
+  // Swipe para descartar: borrado real (no solo "leida"), asi que se saca
+  // del estado local de una y no se vuelve a mostrar aunque llegue el
+  // proximo polling antes de que la respuesta del DELETE vuelva.
+  const dismiss = (id: string) => {
+    markingRef.current = true;
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    apiFetch(`/api/notifications?id=${id}`, { method: "DELETE" })
+      .catch(() => {})
+      .finally(() => { markingRef.current = false; });
+  };
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <NotificationsContext.Provider value={{ notifications, unreadCount, loading, refresh, markAllRead }}>
+    <NotificationsContext.Provider value={{ notifications, unreadCount, loading, refresh, markAllRead, markRead, dismiss }}>
       {children}
     </NotificationsContext.Provider>
   );

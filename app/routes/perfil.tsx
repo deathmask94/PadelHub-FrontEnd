@@ -229,7 +229,7 @@ export default function Perfil() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>Recordatorios de partido</div>
-              <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>Email 24 h y 1 h antes del partido</div>
+              <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>Push 24 h y 1 h antes del partido</div>
             </div>
             <button
               onClick={() => setReminderEnabled((v) => !v)}
