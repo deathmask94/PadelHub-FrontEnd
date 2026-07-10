@@ -74,7 +74,7 @@ export default function CrearPartido() {
   const [selectedTime,   setSelectedTime]   = useState("");
   const [showTime,       setShowTime]       = useState(false);
 
-  const [formato,        setFormato]        = useState<"dobles"|"individual">("dobles");
+  const [formato,        setFormato]        = useState<"dobles"|"individual">("individual");
   const [generoRival,    setGeneroRival]    = useState<"" | "Masculino" | "Femenino">("");
   const [jugadores,      setJugadores]      = useState<(PlayerOption|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
