@@ -36,13 +36,15 @@ export default function ForgotPasswordPage() {
     <div className="ph-screen" style={{ justifyContent: "center" }}>
       <div style={{ padding: "0 28px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
 
-        <button
-          onClick={() => navigate("/login")}
-          className="ph-back-btn"
-          style={{ marginBottom: 24, alignSelf: "flex-start" }}
-        >
-          ←
-        </button>
+        {!sent && (
+          <button
+            onClick={() => navigate("/login")}
+            className="ph-back-btn"
+            style={{ marginBottom: 24, alignSelf: "flex-start" }}
+          >
+            ←
+          </button>
+        )}
 
         {!sent && (
           <div className="fade-up" style={{ textAlign: "center", marginBottom: 32 }}>
