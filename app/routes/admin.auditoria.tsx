@@ -29,6 +29,7 @@ const ACTION_COLOR: Record<string, string> = {
   BACKUP_DOWNLOADED:     "rgba(167,139,250,0.15)",
   BACKUP_RESTORED:       "rgba(167,139,250,0.15)",
   MMR_ADJUST:            "rgba(251,146,60,0.15)",
+  MATCH_STATUS_FORCED:   "rgba(167,139,250,0.15)",
 };
 const ACTION_TEXT: Record<string, string> = {
   ADMIN_LOGIN:           "#86efac",
@@ -37,6 +38,7 @@ const ACTION_TEXT: Record<string, string> = {
   BACKUP_DOWNLOADED:     "#c4b5fd",
   BACKUP_RESTORED:       "#c4b5fd",
   MMR_ADJUST:            "#fdba74",
+  MATCH_STATUS_FORCED:   "#c4b5fd",
 };
 
 const inp: React.CSSProperties = {

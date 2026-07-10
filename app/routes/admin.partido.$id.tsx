@@ -68,6 +68,7 @@ export default function AdminPartidoDetailPage() {
   const [error,   setError]   = useState("");
   const [annulling, setAnnulling] = useState(false);
   const [success,   setSuccess]   = useState("");
+  const [forcingStatus, setForcingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -95,6 +96,28 @@ export default function AdminPartidoDetailPage() {
       setError(e instanceof Error ? e.message : "Error al anular el resultado");
     } finally {
       setAnnulling(false);
+    }
+  };
+
+  const handleForceStatus = async (status: string) => {
+    if (!match) return;
+    if (status === match.status) return;
+    if (!confirm(
+      `¿Forzar el estado de "${match.club}" de "${STATUS_LABELS[match.status]}" a "${STATUS_LABELS[status]}"?\n\nEsto NO toca resultados ni MMR, solo cambia el estado. Uso pensado para soporte/pruebas.`
+    )) return;
+
+    setForcingStatus(status); setError(""); setSuccess("");
+    try {
+      const res = await adminFetch<{ message: string; match: Partial<AdminMatchDetail> }>(
+        `/api/admin/matches/${match.id}/set-status`,
+        { method: "POST", body: JSON.stringify({ status }) },
+      );
+      setMatch((prev) => prev ? { ...prev, ...res.match } : prev);
+      setSuccess(res.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error al cambiar el estado");
+    } finally {
+      setForcingStatus(null);
     }
   };
 
@@ -230,6 +253,33 @@ export default function AdminPartidoDetailPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Forzar estado (soporte/pruebas) */}
+              <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 14, padding: "20px", marginBottom: 16 }}>
+                <SectionTitle>FORZAR ESTADO DEL PARTIDO</SectionTitle>
+                <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14, lineHeight: 1.5 }}>
+                  Cambia el estado directamente, sin pasar por el flujo normal (unirse, confirmar, registrar resultado). No toca resultados ni MMR. Pensado para destrabar un partido o probar sin esperar la hora real.
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {(Object.keys(STATUS_LABELS) as (keyof typeof STATUS_LABELS)[]).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleForceStatus(s)}
+                      disabled={s === match.status || forcingStatus !== null}
+                      style={{
+                        padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                        border: `1px solid ${s === match.status ? STATUS_COLORS[s] : "var(--border)"}`,
+                        background: s === match.status ? `${STATUS_COLORS[s]}22` : "var(--bg3)",
+                        color: s === match.status ? STATUS_COLORS[s] : "var(--text2)",
+                        cursor: s === match.status || forcingStatus !== null ? "not-allowed" : "pointer",
+                        opacity: forcingStatus !== null && forcingStatus !== s ? 0.5 : 1,
+                      }}
+                    >
+                      {forcingStatus === s ? "…" : STATUS_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Historial MMR */}
