@@ -330,12 +330,20 @@ export default function Perfil() {
                 {esNuevo
                   ? "Juega partidos para obtener ranking"
                   : stats
-                    ? `#${stats.ranking_position} en ${user?.zona ?? "tu zona"} (de ${stats.total_in_zone})`
+                    ? `#${stats.ranking_position} en ${user?.zona ?? "tu zona"}`
                     : `— en ${user?.zona ?? "tu zona"}`}
               </div>
             </div>
             {!esNuevo && stats && (
               <div style={{ textAlign: "right" }}>
+                {lastMatches.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: lastMatches[0].delta >= 0 ? "#4ade80" : "#fca5a5" }}>
+                      {lastMatches[0].delta >= 0 ? "▲" : "▼"} {lastMatches[0].delta >= 0 ? "+" : ""}{lastMatches[0].delta}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 6 }}>último partido</div>
+                  </>
+                )}
                 <div style={{ fontSize: 13, fontWeight: 600, color: stats.mmr_variation_30d >= 0 ? "#4ade80" : "#fca5a5" }}>
                   {stats.mmr_variation_30d >= 0 ? "▲" : "▼"} {stats.mmr_variation_30d >= 0 ? "+" : ""}{stats.mmr_variation_30d}
                 </div>
