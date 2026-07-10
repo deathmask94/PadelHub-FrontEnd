@@ -36,7 +36,7 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 export default function Home() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [matches,      setMatches]      = useState<Match[]>([]);
@@ -79,11 +79,6 @@ export default function Home() {
     try { await respondInvitation(matchId, accept); await fetchMatches({ silent: true }); }
     catch (e: unknown) { setErrorM(e instanceof Error ? e.message : 'Error al responder'); }
     finally { setRespondingId(null); }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login", { replace: true });
   };
 
   const proximoPartido =
@@ -488,16 +483,6 @@ export default function Home() {
             )}
           </>
         )}
-
-        {/* Cerrar sesión */}
-        <div style={{ textAlign: "center", marginBottom: 24, marginTop: 8 }}>
-          <span
-            onClick={handleLogout}
-            style={{ fontSize: 12, color: "var(--text2)", cursor: "pointer", textDecoration: "underline" }}
-          >
-            Cerrar sesión
-          </span>
-        </div>
 
       </div>
       <NavBar />

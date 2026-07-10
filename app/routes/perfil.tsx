@@ -162,12 +162,7 @@ export default function Perfil() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px" }}>
           <button className="ph-back-btn" onClick={() => navigate("/home", { replace: true })}>←</button>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700 }}>Mi perfil</div>
-          <button
-            onClick={handleLogout}
-            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, padding: "6px 12px", color: "#fca5a5", fontSize: 12, fontFamily: "var(--font-body)", fontWeight: 600, cursor: "pointer" }}
-          >
-            Salir
-          </button>
+          <div style={{ width: 36 }} />
         </div>
 
         <div style={{ padding: "0 20px" }}>
@@ -437,6 +432,16 @@ export default function Perfil() {
               ))}
             </div>
           )}
+
+          {/* Cerrar sesión */}
+          <div style={{ textAlign: "center", marginBottom: 24, marginTop: 8 }}>
+            <span
+              onClick={handleLogout}
+              style={{ fontSize: 12, color: "#ef4444", cursor: "pointer", textDecoration: "underline" }}
+            >
+              Cerrar sesión
+            </span>
+          </div>
 
         </div>
       </div>
