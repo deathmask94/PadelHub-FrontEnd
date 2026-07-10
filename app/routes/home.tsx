@@ -93,6 +93,14 @@ export default function Home() {
     (m) => m.organizer_id === user?.id && m.status === "in_progress",
   );
 
+  // Invitaciones a las que todavia no respondiste -- se muestran arriba de
+  // todo, sin depender de que encuentres la pestaña "Mis partidos".
+  const pendingInvites = myMatches.filter((m) => {
+    const myEntry = (m as Match & { match_players?: { user_id: string; status: string }[] })
+      .match_players?.find((p) => p.user_id === user?.id);
+    return myEntry?.status === "pending";
+  });
+
   return (
     <div className="ph-screen">
       <div className="ph-scroll" style={{ padding: "20px 20px 0" }}>
@@ -147,6 +155,57 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* ── Invitaciones pendientes ── */}
+        {pendingInvites.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, color: "var(--accent)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8, fontWeight: 700 }}>
+              🎾 Invitaciones pendientes ({pendingInvites.length})
+            </div>
+            {pendingInvites.map((m) => {
+              const isResponding = respondingId === m.id;
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    background: "rgba(132,204,22,0.08)", border: "1px solid var(--border2)",
+                    borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer",
+                  }}
+                  onClick={() => navigate(`/matches/${m.id}`)}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{m.club}</div>
+                  <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10 }}>
+                    {formatMatchDate(m.match_date)} · {formatTime(m.match_time)} · {m.format === "doubles" ? "Dobles" : "Individual"}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleRespond(m.id, true)}
+                      disabled={isResponding}
+                      style={{
+                        flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
+                        background: "var(--accent)", color: "#fff",
+                        fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      }}
+                    >
+                      {isResponding ? "…" : "✓ Aceptar"}
+                    </button>
+                    <button
+                      onClick={() => handleRespond(m.id, false)}
+                      disabled={isResponding}
+                      style={{
+                        flex: 1, padding: "8px 0", borderRadius: 8,
+                        border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.08)",
+                        color: "#fca5a5", fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      }}
+                    >
+                      {isResponding ? "…" : "✕ Rechazar"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* ── Aviso de resultado pendiente ── */}
         {pendingResultMatch && (
