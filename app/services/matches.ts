@@ -8,6 +8,7 @@ export interface Match {
   status: 'open' | 'confirmed' | 'in_progress' | 'finished' | 'cancelled';
   gender_preference?: 'Masculino' | 'Femenino' | null;
   is_ranked?: boolean;
+  organizer_team?: 'team_a' | 'team_b' | null;
   match_date: string;
   match_time: string;
   created_at: string;
@@ -27,6 +28,7 @@ export interface CreateMatchPayload {
   match_date: string;
   match_time: string;
   gender_preference?: 'Masculino' | 'Femenino';
+  organizer_team?: 'team_a' | 'team_b';
 }
 
 export interface MatchFilters {

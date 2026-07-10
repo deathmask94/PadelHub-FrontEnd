@@ -79,6 +79,11 @@ export default function CrearPartido() {
   // ("por los puntos") solo esta disponible en individual.
   const [modo,           setModo]           = useState<"casual"|"competitivo">("casual");
   const [generoRival,    setGeneroRival]    = useState<"" | "Masculino" | "Femenino">("");
+  // En dobles el organizador debe elegir su propio equipo ANTES de invitar a
+  // nadie -- si no, nadie sabe en que equipo esta el organizador hasta que
+  // el mismo lo revela al registrar el resultado (podia "elegir" un equipo
+  // que ya estaba lleno por los invitados).
+  const [organizerTeam,  setOrganizerTeam]  = useState<"" | "team_a" | "team_b">("");
   const [jugadores,      setJugadores]      = useState<(PlayerOption|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
   // Ids cuya foto de perfil fallo al cargar (asset borrado en Cloudinary, etc.):
@@ -184,6 +189,7 @@ export default function CrearPartido() {
     if (!selectedTime) { showToastMsg("Selecciona una hora"); return; }
     if (!user)         { showToastMsg("Debes iniciar sesión"); return; }
     if (isCompetitivo && !slots[0]) { showToastMsg("Elige a quién desafías"); return; }
+    if (formato === "dobles" && !organizerTeam) { showToastMsg("Elige en qué equipo juegas tú"); return; }
 
     setSaving(true);
     try {
@@ -198,6 +204,7 @@ export default function CrearPartido() {
         match_date:   matchDate,
         match_time:   matchTime,
         ...(!isCompetitivo && generoRival ? { gender_preference: generoRival } : {}),
+        ...(formato === "dobles" ? { organizer_team: organizerTeam as "team_a" | "team_b" } : {}),
       });
 
       const selectedPlayers = slots.filter((j): j is PlayerOption => j !== null);
@@ -394,6 +401,7 @@ export default function CrearPartido() {
                     setFormato(f);
                     setJugadores([null,null,null]);
                     if (f === "dobles") setModo("casual"); // dobles solo existe en modo casual
+                    else setOrganizerTeam(""); // el equipo del organizador solo aplica en dobles
                   }}
                   className={`ph-format-opt${formato===f?" selected":""}`}>
                   <div style={{ fontSize:22, marginBottom:4 }}>{f==="dobles"?"👥":"🧍"}</div>
@@ -405,6 +413,29 @@ export default function CrearPartido() {
               ))}
             </div>
           </div>
+
+          {/* 4a. Equipo del organizador: obligatorio en dobles, antes de invitar a nadie */}
+          {formato === "dobles" && (
+            <div style={{ marginBottom:14 }}>
+              <label className="ph-label">¿En qué equipo juegas tú?</label>
+              <div style={{ display:"flex", gap:10 }}>
+                {(["team_a","team_b"] as const).map((t) => (
+                  <button key={t} type="button"
+                    onClick={() => setOrganizerTeam(t)}
+                    className={`ph-format-opt${organizerTeam===t?" selected":""}`}
+                    style={{ flex: 1, padding: "10px 0" }}
+                  >
+                    {t === "team_a" ? "Equipo A" : "Equipo B"}
+                  </button>
+                ))}
+              </div>
+              {!organizerTeam && (
+                <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 6 }}>
+                  Elige tu equipo antes de invitar jugadores
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 4b. Modo: casual (exhibición, no afecta MMR) vs competitivo (por los puntos) */}
           <div style={{ marginBottom:14 }}>
@@ -565,7 +596,12 @@ export default function CrearPartido() {
           </div>
 
           {/* Info visibilidad */}
-          <button className="ph-btn" onClick={handleCrear} disabled={saving} style={{ marginBottom:8 }}>
+          <button
+            className="ph-btn"
+            onClick={handleCrear}
+            disabled={saving || (formato === "dobles" && !organizerTeam)}
+            style={{ marginBottom:8 }}
+          >
             {saving ? "Creando..." : "Crear partido"}
           </button>
 

@@ -34,6 +34,7 @@ interface MatchDetail {
   organizer_id: string; is_organizer: boolean; my_status: string | null;
   max_players: number; can_rate: boolean; has_rated: boolean;
   is_ranked: boolean; gender_preference: "Masculino" | "Femenino" | null;
+  organizer_team: "team_a" | "team_b" | null;
   users: PlayerUser;
   match_players: MatchPlayer[];
   match_results: {
@@ -138,11 +139,7 @@ export default function MatchDetail() {
   const [responding,  setResponding]  = useState(false);
   const [joining,     setJoining]     = useState(false);
 
-  const [resultForm,  setResultForm]  = useState<{
-    organizer_team: "team_a" | "team_b" | "";
-    sets: SetResult[];
-  }>({
-    organizer_team: "",
+  const [resultForm,  setResultForm]  = useState<{ sets: SetResult[] }>({
     sets: [EMPTY_SET, EMPTY_SET, EMPTY_SET],
   });
   const [submittingResult, setSubmittingResult] = useState(false);
@@ -292,17 +289,18 @@ export default function MatchDetail() {
   };
 
   // En individual (1v1) no existe ambiguedad de equipo: el organizador es
-  // simplemente "el otro" respecto de quien se unio. Preguntarle en que
-  // equipo jugo es confuso y ademas puede chocar con el equipo que el
-  // join ya le asigno automaticamente al rival, dejando los dos jugadores
-  // en el mismo equipo y el resultado sin poder registrarse nunca.
+  // simplemente "el otro" respecto de quien se unio, se deduce solo. En
+  // dobles el organizador ya eligio su equipo al crear el partido (ver
+  // matches.organizer_team) -- ya no se le pregunta aca, evitando que
+  // "elija" un equipo que ya esta lleno por los invitados.
   const isSinglesMatch = match?.format === "singles";
   const opponentEntry  = match?.match_players.find((p) => p.status === "confirmed");
   const autoOrganizerTeam: "team_a" | "team_b" | undefined =
     isSinglesMatch && opponentEntry
       ? (opponentEntry.team === "team_a" ? "team_b" : "team_a")
       : undefined;
-  const effectiveOrganizerTeam = resultForm.organizer_team || autoOrganizerTeam || "";
+  const effectiveOrganizerTeam: "team_a" | "team_b" | "" =
+    (isSinglesMatch ? autoOrganizerTeam : match?.organizer_team) || "";
 
   const setsToPlay = resultForm.sets.slice(0, 2).every((s) => isSetValid(s)) && resultForm.sets[0].winner === resultForm.sets[1].winner
     ? 2
@@ -323,10 +321,9 @@ export default function MatchDetail() {
       await apiFetch(`/api/matches/${id}/result`, {
         method: "POST",
         body: JSON.stringify({
-          winner:         matchWinner,
-          organizer_team: effectiveOrganizerTeam,
-          score_team_a:   playedSets.map((s) => s.gamesA).join("-"),
-          score_team_b:   playedSets.map((s) => s.gamesB).join("-"),
+          winner:       matchWinner,
+          score_team_a: playedSets.map((s) => s.gamesA).join("-"),
+          score_team_b: playedSets.map((s) => s.gamesB).join("-"),
         }),
       });
       showToast("Resultado enviado, falta que tu rival lo confirme");
@@ -415,9 +412,11 @@ export default function MatchDetail() {
   const canJoin      = !match.is_organizer && match.my_status === null && match.status === "open" && emptySlots > 0;
 
   // Cada equipo tiene cupo maximo de 2 en dobles; se usa para deshabilitar
-  // el equipo ya lleno al invitar y para exigir elegir el otro.
-  const teamACount = activePlayers.filter((p) => p.team === "team_a").length;
-  const teamBCount = activePlayers.filter((p) => p.team === "team_b").length;
+  // el equipo ya lleno al invitar y para exigir elegir el otro. El
+  // organizador cuenta para el cupo de su equipo aunque no tenga fila en
+  // match_players (su equipo quedo fijo desde que creo el partido).
+  const teamACount = activePlayers.filter((p) => p.team === "team_a").length + (match.organizer_team === "team_a" ? 1 : 0);
+  const teamBCount = activePlayers.filter((p) => p.team === "team_b").length + (match.organizer_team === "team_b" ? 1 : 0);
 
   // Si el organizador tiene el resultado pendiente, no puede salir de la
   // pantalla sin registrarlo (ni saltarselo): el partido quedaria "en
@@ -578,7 +577,14 @@ export default function MatchDetail() {
                   {NIVEL_LABEL[match.users.level] ?? match.users.level} · {match.users.mmr} MMR
                 </div>
               </div>
-              <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600 }}>Organizador</span>
+              <div style={{ textAlign: "right" }}>
+                {match.format === "doubles" && match.organizer_team && (
+                  <div style={{ fontSize: 10, color: match.organizer_team === "team_a" ? "#60a5fa" : "#f472b6", fontWeight: 700, marginBottom: 2 }}>
+                    {match.organizer_team === "team_a" ? "Equipo A" : "Equipo B"}
+                  </div>
+                )}
+                <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600 }}>Organizador</span>
+              </div>
             </div>
 
             {/* Joined players */}
@@ -640,6 +646,14 @@ export default function MatchDetail() {
               <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
                 Invitar jugador
               </div>
+              {match.format === "doubles" && match.organizer_team && (
+                <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10 }}>
+                  Tú vas en{" "}
+                  <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+                    {match.organizer_team === "team_a" ? "Equipo A" : "Equipo B"}
+                  </span>
+                </div>
+              )}
               <div className="ph-card" style={{ marginBottom: 16 }}>
                 {match.format === "doubles" && (
                   <div style={{ marginBottom: 10 }}>
@@ -748,30 +762,17 @@ export default function MatchDetail() {
               </div>
               <div className="ph-card" style={{ marginBottom: 16 }}>
 
-                {/* Equipo del organizador: solo aplica en dobles. En individual
-                    no hay ambiguedad (es directamente contra el otro jugador),
-                    y preguntarlo podia chocar con el equipo que join.ts ya le
-                    asigna al rival, dejando a los dos en el mismo equipo. */}
-                {!isSinglesMatch && (
-                  <>
-                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>¿En qué equipo jugaste?</div>
-                    <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                      {(["team_a", "team_b"] as const).map((t) => (
-                        <button key={t}
-                          onClick={() => setResultForm((f) => ({ ...f, organizer_team: t }))}
-                          style={{
-                            flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
-                            border: `1px solid ${resultForm.organizer_team === t ? "var(--accent)" : "var(--border)"}`,
-                            background: resultForm.organizer_team === t ? "rgba(132,204,22,0.12)" : "var(--bg3)",
-                            color: resultForm.organizer_team === t ? "var(--accent)" : "var(--text2)",
-                            fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
-                          }}
-                        >
-                          {t === "team_a" ? "Equipo A" : "Equipo B"}
-                        </button>
-                      ))}
-                    </div>
-                  </>
+                {/* Equipo del organizador: en dobles ya quedo fijo desde que
+                    se creo el partido, aca solo se muestra como info -- no
+                    hay nada que elegir. En individual se deduce solo (es
+                    directamente el equipo opuesto al del rival). */}
+                {!isSinglesMatch && effectiveOrganizerTeam && (
+                  <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>
+                    Tú jugaste en{" "}
+                    <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+                      {effectiveOrganizerTeam === "team_a" ? "Equipo A" : "Equipo B"}
+                    </span>
+                  </div>
                 )}
 
                 {/* Sets: cada uno guarda quien lo gano Y los games de cada
