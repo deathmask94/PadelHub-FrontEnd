@@ -101,7 +101,7 @@ export default function Matchmaking() {
         body: JSON.stringify({
           organizer_id: user.id,
           club:         clubInput.trim(),
-          format:       "doubles",
+          format:       "singles",
           match_date:   dateInput,
           match_time:   `${dateInput}T${timeInput}:00`,
         }),

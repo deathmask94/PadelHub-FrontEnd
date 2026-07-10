@@ -215,8 +215,7 @@ export default function MatchDetail() {
       await apiFetch(`/api/matches/${id}/cancel`, { method: "POST" });
       showToast("Partido cancelado.");
       setConfirmCancel(false);
-      await load();
-      setTimeout(() => navigate("/home"), 3000);
+      setTimeout(() => navigate("/home"), 1500);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al cancelar");
     } finally {
@@ -231,7 +230,7 @@ export default function MatchDetail() {
       await apiFetch(`/api/matches/${id}/leave`, { method: "POST" });
       showToast("Has abandonado el partido.");
       setConfirmLeave(false);
-      await load();
+      setTimeout(() => navigate("/home"), 1500);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al abandonar");
     } finally {
@@ -310,7 +309,7 @@ export default function MatchDetail() {
       });
       showToast(accept ? "¡Te has unido al partido!" : "Invitación rechazada");
       if (accept) await load();
-      else { setTimeout(() => navigate("/home"), 800); }
+      else { setTimeout(() => navigate("/home"), 1500); }
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al responder");
     } finally {
