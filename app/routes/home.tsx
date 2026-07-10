@@ -4,15 +4,10 @@ import { useAuth } from "~/context/AuthContext";
 import { useNotifications } from "~/context/NotificationsContext";
 import NavBar from "~/components/ui/NavBar";
 import Avatar from "~/components/ui/Avatar";
-import { getMatches, getMyMatches, respondInvitation, type Match, type MatchFilters } from "~/services/matches";
+import { getMyMatches, respondInvitation, type Match } from "~/services/matches";
 
 const DIAS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const NIVEL_LABEL: Record<string, string> = {
-  primera: "1ra", segunda: "2da", tercera: "3ra",
-  cuarta: "4ta", quinta: "5ta", sexta: "6ta", septima_mas: "7ma+",
-};
-const ZONAS = ["Valparaíso","Viña del Mar","Quilpué","Villa Alemana","Concón"];
 
 function formatMatchDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -39,31 +34,23 @@ export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [matches,      setMatches]      = useState<Match[]>([]);
   const [myMatches,    setMyMatches]    = useState<Match[]>([]);
   const [loadingM,     setLoadingM]     = useState(true);
   const [errorM,       setErrorM]       = useState("");
-  const [activeTab,    setActiveTab]    = useState<'all' | 'mine'>('all');
+  const [activeTab,    setActiveTab]    = useState<'invites' | 'mine'>('invites');
   const [respondingId, setRespondingId] = useState<string | null>(null);
-  const [filters,      setFilters]      = useState<MatchFilters>({ zone: "", format: undefined, date: undefined });
   const { unreadCount } = useNotifications();
 
   const fetchMatches = useCallback(async (opts?: { silent?: boolean }) => {
-    const activeFilters: MatchFilters = {
-      zone:   filters.zone   || undefined,
-      format: filters.format || undefined,
-      date:   filters.date   || undefined,
-    };
     if (!opts?.silent) setLoadingM(true);
     try {
-      const [all, mine] = await Promise.all([getMatches(activeFilters), getMyMatches()]);
-      setMatches(all); setMyMatches(mine);
+      setMyMatches(await getMyMatches());
     } catch (e: unknown) {
       if (!opts?.silent) setErrorM(e instanceof Error ? e.message : 'Error al cargar los partidos');
     } finally {
       if (!opts?.silent) setLoadingM(false);
     }
-  }, [filters]);
+  }, []);
 
   useEffect(() => { fetchMatches(); }, [fetchMatches]);
 
@@ -323,7 +310,7 @@ export default function Home() {
 
         {/* ── Tabs de partidos ── */}
         <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-          {(['all', 'mine'] as const).map((tab) => (
+          {(['invites', 'mine'] as const).map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               flex: 1, padding: "8px 0", borderRadius: 10, border: "none",
               fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 600, cursor: "pointer",
@@ -331,69 +318,10 @@ export default function Home() {
               color:      activeTab === tab ? "#fff"          : "var(--text2)",
               transition: "all .2s",
             }}>
-              {tab === 'all' ? 'Disponibles' : 'Mis partidos'}
+              {tab === 'invites' ? 'Invitaciones' : 'Mis partidos'}
             </button>
           ))}
         </div>
-
-        {/* ── Filtros (solo en tab Disponibles) ── */}
-        {activeTab === 'all' && (
-          <div style={{ marginBottom: 12 }}>
-            {/* Zona */}
-            <select
-              value={filters.zone ?? ""}
-              onChange={(e) => setFilters((f) => ({ ...f, zone: e.target.value }))}
-              className="ph-select"
-              style={{ marginBottom: 8, fontSize: 12 }}
-            >
-              <option value="">Todas las zonas</option>
-              {ZONAS.map((z) => <option key={z} value={z}>{z}</option>)}
-            </select>
-
-            {/* Formato + Fecha en fila */}
-            <div style={{ display: "flex", gap: 6 }}>
-              {/* Formato */}
-              <div style={{ display: "flex", flex: 1, gap: 4 }}>
-                {([
-                  { val: undefined,   label: "Todos"     },
-                  { val: "doubles",   label: "Dobles"    },
-                  { val: "singles",   label: "Individual"},
-                ] as { val: 'doubles' | 'singles' | undefined; label: string }[]).map(({ val, label }) => (
-                  <button key={label}
-                    onClick={() => setFilters((f) => ({ ...f, format: val }))}
-                    style={{
-                      flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid var(--border)",
-                      fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                      background: filters.format === val ? "rgba(132,204,22,0.12)" : "var(--bg3)",
-                      color:      filters.format === val ? "var(--accent)"          : "var(--text2)",
-                      transition: "all .15s",
-                    }}
-                  >{label}</button>
-                ))}
-              </div>
-
-              {/* Fecha */}
-              <div style={{ display: "flex", flex: 1, gap: 4 }}>
-                {([
-                  { val: undefined, label: "Siempre" },
-                  { val: "today",   label: "Hoy"     },
-                  { val: "week",    label: "7 días"  },
-                ] as { val: 'today' | 'week' | undefined; label: string }[]).map(({ val, label }) => (
-                  <button key={label}
-                    onClick={() => setFilters((f) => ({ ...f, date: val }))}
-                    style={{
-                      flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid var(--border)",
-                      fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                      background: filters.date === val ? "rgba(132,204,22,0.12)" : "var(--bg3)",
-                      color:      filters.date === val ? "var(--accent)"          : "var(--text2)",
-                      transition: "all .15s",
-                    }}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {errorM && <div className="ph-error">{errorM}</div>}
 
@@ -403,90 +331,53 @@ export default function Home() {
           </div>
         )}
 
-        {!loadingM && activeTab === 'all' && (
+        {/* ── Invitaciones: solo lo que otros te enviaron a ti ── */}
+        {!loadingM && activeTab === 'invites' && (
           <>
-            {matches.length === 0 && !errorM ? (
+            {pendingInvites.length === 0 && !errorM ? (
               <div className="ph-card" style={{ textAlign: "center", padding: "24px 16px", marginBottom: 24 }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>🎾</div>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Sin partidos disponibles</div>
-                <div style={{ fontSize: 12, color: "var(--text2)" }}>Sé el primero en crear uno</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>Sin partidos disponibles</div>
               </div>
             ) : (
-              matches.slice(0, 10).map((m) => {
-                const isOrganizer = m.organizer_id === user?.id;
-                const isJoining   = false;
-                const total       = m.max_players ?? (m.format === "doubles" ? 4 : 2);
-                const filled      = m.player_count ?? 1;
+              pendingInvites.map((m) => {
+                const isResponding = respondingId === m.id;
                 return (
                   <div
-                    key={m.id} className="ph-card"
-                    style={{ marginBottom: 8, padding: "12px 14px", cursor: "pointer" }}
+                    key={m.id}
+                    style={{
+                      background: "rgba(132,204,22,0.08)", border: "1px solid var(--border2)",
+                      borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer",
+                    }}
                     onClick={() => navigate(`/matches/${m.id}`)}
                   >
-                    {/* Fila 1: club + status */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{m.club}</div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {m.is_ranked ? (
-                          <span className="ph-pill" style={{ fontSize: 10, background: "rgba(132,204,22,0.1)", color: "var(--accent)", border: "1px solid var(--border2)" }}>
-                            🏆 Competitivo
-                          </span>
-                        ) : (
-                          <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
-                            🎉 Casual
-                          </span>
-                        )}
-                        <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
-                          {m.gender_preference === "Masculino" ? "Solo hombres" : m.gender_preference === "Femenino" ? "Solo mujeres" : "Mixto"}
-                        </span>
-                        <span className="ph-pill ph-pill-green" style={{ fontSize: 10 }}>Abierto</span>
-                      </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{m.club}</div>
+                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10 }}>
+                      {formatMatchDate(m.match_date)} · {formatTime(m.match_time)} · {m.format === "doubles" ? "Dobles" : "Individual"}
                     </div>
-
-                    {/* Fila 2: fecha, hora, formato */}
-                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>
-                      📅 {formatMatchDate(m.match_date)} · ⏰ {formatTime(m.match_time)} · {m.format === "doubles" ? "Dobles" : "Individual"}
-                    </div>
-
-                    {/* Fila 3: organizador con nivel */}
-                    {m.users && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <div style={{
-                          width: 22, height: 22, borderRadius: 6, background: "var(--accent)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 9, fontWeight: 700, color: "#fff", flexShrink: 0,
-                        }}>
-                          {m.users.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
-                        </div>
-                        <span style={{ fontSize: 12, color: "var(--text2)" }}>{m.users.name}</span>
-                        {m.users.level && (
-                          <span className="ph-pill ph-pill-green" style={{ fontSize: 10, padding: "1px 6px" }}>
-                            {NIVEL_LABEL[m.users.level] ?? m.users.level}
-                          </span>
-                        )}
-                        {m.users.mmr && (
-                          <span style={{ fontSize: 11, color: "var(--text2)" }}>{m.users.mmr} MMR</span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Fila 4: slots + estado */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        {Array.from({ length: total }).map((_, i) => (
-                          <span key={i} style={{
-                            fontSize: 10, lineHeight: 1,
-                            color: i < filled ? "var(--accent)" : "var(--border)",
-                          }}>●</span>
-                        ))}
-                        <span style={{ fontSize: 11, color: "var(--text2)", marginLeft: 4 }}>
-                          {filled}/{total}
-                        </span>
-                      </div>
-                      {isOrganizer
-                        ? <span style={{ fontSize: 11, color: "var(--accent)" }}>Tu partido →</span>
-                        : <span style={{ fontSize: 11, color: "var(--text2)", background: "var(--bg3)", padding: "4px 10px", borderRadius: 8 }}>Solo por invitación</span>
-                      }
+                    <div style={{ display: "flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleRespond(m.id, true)}
+                        disabled={isResponding}
+                        style={{
+                          flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
+                          background: "var(--accent)", color: "#fff",
+                          fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                        }}
+                      >
+                        {isResponding ? "…" : "✓ Aceptar"}
+                      </button>
+                      <button
+                        onClick={() => handleRespond(m.id, false)}
+                        disabled={isResponding}
+                        style={{
+                          flex: 1, padding: "8px 0", borderRadius: 8,
+                          border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.08)",
+                          color: "#fca5a5", fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                        }}
+                      >
+                        {isResponding ? "…" : "✕ Rechazar"}
+                      </button>
                     </div>
                   </div>
                 );

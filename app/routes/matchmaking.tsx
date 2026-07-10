@@ -50,24 +50,22 @@ export default function Matchmaking() {
 
   const [phase,        setPhase]        = useState<Phase>("idle");
   const [suggestions,  setSuggestions]  = useState<Suggestion[]>([]);
-  const [index,        setIndex]        = useState(0);
+  const [selectedId,   setSelectedId]   = useState<string | null>(null);
   const [toast,        setToast]        = useState("");
 
   // Challenge form
   const [clubInput,   setClubInput]   = useState("");
   const [dateInput,   setDateInput]   = useState(todayISO());
   const [timeInput,   setTimeInput]   = useState("10:00");
-  const [formOpen,    setFormOpen]    = useState(false);
   const [challenging, setChallenging] = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  const rival = suggestions[index] ?? null;
+  const selectedRival = suggestions.find((s) => s.id === selectedId) ?? null;
 
   const handleSearch = async () => {
     setPhase("searching");
-    setIndex(0);
-    setFormOpen(false);
+    setSelectedId(null);
     try {
       const data = await apiFetch<SuggestionsResponse>("/api/users/suggestions");
       setSuggestions(data.suggestions);
@@ -78,18 +76,13 @@ export default function Matchmaking() {
     }
   };
 
-  const handleNext = () => {
-    const next = index + 1;
-    if (next < suggestions.length) {
-      setIndex(next);
-      setFormOpen(false);
-    } else {
-      setPhase("empty");
-    }
+  const handleSelect = (id: string) => {
+    setSelectedId((prev) => (prev === id ? null : id));
+    setClubInput(""); setDateInput(todayISO()); setTimeInput("10:00");
   };
 
   const handleChallenge = async () => {
-    if (!user?.id || !rival || !clubInput.trim()) {
+    if (!user?.id || !selectedRival || !clubInput.trim()) {
       showToast("Ingresa el club o cancha"); return;
     }
     setChallenging(true);
@@ -107,9 +100,9 @@ export default function Matchmaking() {
       });
       await apiFetch(`/api/matches/${match.id}/invite`, {
         method: "POST",
-        body: JSON.stringify({ userId: rival.id }),
+        body: JSON.stringify({ userId: selectedRival.id }),
       });
-      showToast(`¡Desafío enviado a ${rival.name}!`);
+      showToast(`¡Desafío enviado a ${selectedRival.name}!`);
       setTimeout(() => navigate(`/matches/${match.id}`), 1200);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al crear el desafío");
@@ -148,8 +141,8 @@ export default function Matchmaking() {
               }}>
                 <Avatar photoUrl={user?.photo_url} name={user?.nombre ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, textTransform: "uppercase", marginBottom: 4 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, textTransform: "uppercase", marginBottom: 4, overflowWrap: "break-word" }}>
                   {user?.nombre ?? "—"}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -176,7 +169,7 @@ export default function Matchmaking() {
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🎯</div>
               <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 8, lineHeight: 1.5 }}>
-                Te buscaremos un rival de tu mismo sexo con MMR similar en tu zona
+                Enfréntate a otros jugadores y lucha por ser el mejor de tu zona
               </div>
               <div style={{ fontSize: 12, color: "var(--accent)", marginBottom: 24 }}>
                 🏆 Modo competitivo — el resultado afecta tu MMR
@@ -207,111 +200,113 @@ export default function Matchmaking() {
             </div>
           )}
 
-          {/* ── Estado: found ── */}
-          {phase === "found" && rival && (
+          {/* ── Estado: found — 3 rivales a elegir, sin "ver mas" ── */}
+          {phase === "found" && suggestions.length > 0 && (
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                 <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
                 <span style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8 }}>
-                  Rival encontrado
+                  {suggestions.length === 1 ? "Rival encontrado" : "Elige a tu rival"}
                 </span>
                 <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
               </div>
 
-              {/* Card del rival */}
-              <div className="ph-card" style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                  <RivalAvatar name={rival.name} photo_url={rival.photo_url} size={56} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, textTransform: "uppercase", marginBottom: 4 }}>
-                      {rival.name}
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <span className="ph-pill ph-pill-green" style={{ fontSize: 12, fontWeight: 700 }}>
-                        MMR {rival.mmr}
-                      </span>
-                      <span className="ph-pill ph-pill-green" style={{ fontSize: 11 }}>
-                        {NIVEL_LABEL[rival.level] ?? rival.level}
-                      </span>
-                      <span className="ph-pill" style={{ fontSize: 11, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
-                        {rival.zone}
-                      </span>
-                    </div>
-                  </div>
-                  {/* Compatibilidad */}
-                  <div style={{ textAlign: "center", flexShrink: 0 }}>
-                    <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "var(--accent)" }}>
-                      {rival.compatibility}%
-                    </div>
-                    <div style={{ fontSize: 10, color: "var(--text2)" }}>compat.</div>
-                  </div>
-                </div>
+              {suggestions.map((s) => {
+                const isSelected = selectedId === s.id;
+                return (
+                  <div key={s.id}>
+                    {/* Card del rival */}
+                    <div
+                      className="ph-card"
+                      style={{ marginBottom: isSelected ? 0 : 12, cursor: "pointer", border: isSelected ? "1px solid var(--accent)" : undefined }}
+                      onClick={() => handleSelect(s.id)}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                        <RivalAvatar name={s.name} photo_url={s.photo_url} size={56} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, textTransform: "uppercase", marginBottom: 4, overflowWrap: "break-word" }}>
+                            {s.name}
+                          </div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <span className="ph-pill ph-pill-green" style={{ fontSize: 12, fontWeight: 700 }}>
+                              MMR {s.mmr}
+                            </span>
+                            <span className="ph-pill ph-pill-green" style={{ fontSize: 11 }}>
+                              {NIVEL_LABEL[s.level] ?? s.level}
+                            </span>
+                            <span className="ph-pill" style={{ fontSize: 11, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
+                              {s.zone}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Compatibilidad */}
+                        <div style={{ textAlign: "center", flexShrink: 0 }}>
+                          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "var(--accent)" }}>
+                            {s.compatibility}%
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text2)" }}>compat.</div>
+                        </div>
+                      </div>
 
-                {/* Diferencia MMR */}
-                {user?.mmr != null && (
-                  <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>
-                    Diferencia MMR:{" "}
-                    <span style={{ fontWeight: 700, color: Math.abs(rival.mmr - user.mmr) <= 100 ? "var(--accent)" : "var(--text)" }}>
-                      {rival.mmr > user.mmr ? `+${rival.mmr - user.mmr}` : rival.mmr === user.mmr ? "igual" : `${rival.mmr - user.mmr}`}
-                    </span>
-                  </div>
-                )}
+                      {/* Diferencia MMR */}
+                      {user?.mmr != null && (
+                        <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>
+                          Diferencia MMR:{" "}
+                          <span style={{ fontWeight: 700, color: Math.abs(s.mmr - user.mmr) <= 100 ? "var(--accent)" : "var(--text)" }}>
+                            {s.mmr > user.mmr ? `+${s.mmr - user.mmr}` : s.mmr === user.mmr ? "igual" : `${s.mmr - user.mmr}`}
+                          </span>
+                        </div>
+                      )}
 
-                {/* Botones principales */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <button
-                    className="ph-btn"
-                    onClick={() => { setFormOpen((v) => !v); setClubInput(""); setDateInput(todayISO()); setTimeInput("10:00"); }}
-                  >
-                    {formOpen ? "Cancelar" : "Desafiar"}
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    style={{ padding: "12px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--bg3)", color: "var(--text2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)" }}
-                  >
-                    Ver otro rival
-                  </button>
-                </div>
-              </div>
+                      <button
+                        className="ph-btn"
+                        onClick={(e) => { e.stopPropagation(); handleSelect(s.id); }}
+                      >
+                        {isSelected ? "Cancelar" : "Desafiar"}
+                      </button>
+                    </div>
 
-              {/* Formulario de desafío */}
-              {formOpen && (
-                <div className="ph-card" style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 12 }}>
-                    Configurar partido vs {rival.name}
+                    {/* Formulario de desafío, justo bajo la tarjeta elegida */}
+                    {isSelected && (
+                      <div className="ph-card" style={{ marginBottom: 12, borderTop: "none", borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 12 }}>
+                          Configurar partido vs {s.name}
+                        </div>
+                        <label className="ph-label">Ciudad</label>
+                        <select
+                          className="ph-select"
+                          value={clubInput}
+                          onChange={(e) => setClubInput(e.target.value)}
+                          style={{ marginBottom: 10 }}
+                        >
+                          <option value="">Selecciona tu ciudad</option>
+                          {CLUBS.map((c) => (
+                            <option key={c.nombre} value={c.nombre}>{c.zona}</option>
+                          ))}
+                        </select>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                          <div>
+                            <label className="ph-label">Fecha</label>
+                            <input className="ph-input" type="date" value={dateInput} min={todayISO()}
+                              onChange={(e) => setDateInput(e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="ph-label">Hora</label>
+                            <input className="ph-input" type="time" value={timeInput}
+                              onChange={(e) => setTimeInput(e.target.value)} />
+                          </div>
+                        </div>
+                        <button className="ph-btn" onClick={handleChallenge} disabled={challenging || !clubInput.trim()}>
+                          {challenging ? "Enviando desafío…" : "Confirmar y enviar desafío"}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <label className="ph-label">Ciudad</label>
-                  <select
-                    className="ph-select"
-                    value={clubInput}
-                    onChange={(e) => setClubInput(e.target.value)}
-                    style={{ marginBottom: 10 }}
-                  >
-                    <option value="">Selecciona tu ciudad</option>
-                    {CLUBS.map((c) => (
-                      <option key={c.nombre} value={c.nombre}>{c.zona}</option>
-                    ))}
-                  </select>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-                    <div>
-                      <label className="ph-label">Fecha</label>
-                      <input className="ph-input" type="date" value={dateInput} min={todayISO()}
-                        onChange={(e) => setDateInput(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="ph-label">Hora</label>
-                      <input className="ph-input" type="time" value={timeInput}
-                        onChange={(e) => setTimeInput(e.target.value)} />
-                    </div>
-                  </div>
-                  <button className="ph-btn" onClick={handleChallenge} disabled={challenging || !clubInput.trim()}>
-                    {challenging ? "Enviando desafío…" : "Confirmar y enviar desafío"}
-                  </button>
-                </div>
-              )}
+                );
+              })}
 
               <button
-                onClick={() => { setPhase("idle"); setSuggestions([]); setIndex(0); setFormOpen(false); }}
+                onClick={() => { setPhase("idle"); setSuggestions([]); setSelectedId(null); }}
                 style={{ width: "100%", background: "none", border: "none", color: "var(--text2)", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-body)", padding: "8px 0" }}
               >
                 Nueva búsqueda
@@ -327,7 +322,7 @@ export default function Matchmaking() {
               <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20 }}>
                 No encontramos rivales con MMR similar en tu zona ahora. ¡Vuelve más tarde!
               </div>
-              <button className="ph-btn" onClick={() => { setPhase("idle"); setSuggestions([]); setIndex(0); }}>
+              <button className="ph-btn" onClick={() => { setPhase("idle"); setSuggestions([]); setSelectedId(null); }}>
                 Intentar de nuevo
               </button>
             </div>
