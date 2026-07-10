@@ -33,6 +33,7 @@ interface MatchDetail {
   match_date: string; match_time: string; ends_at?: string;
   organizer_id: string; is_organizer: boolean; my_status: string | null;
   max_players: number; can_rate: boolean; has_rated: boolean;
+  is_ranked: boolean;
   users: PlayerUser;
   match_players: MatchPlayer[];
 }
@@ -373,6 +374,7 @@ export default function MatchDetail() {
                 { icon: "⏰", val: formatTime(match.match_time) },
                 { icon: "🎾", val: match.format === "doubles" ? "Dobles (2v2)" : "Individual (1v1)" },
                 { icon: "👥", val: `${filledSlots}/${maxPlayers} jugadores` },
+                { icon: match.is_ranked ? "🏆" : "🎉", val: match.is_ranked ? "Competitivo — afecta MMR" : "Casual — no afecta MMR" },
               ].map((item) => (
                 <div key={item.icon} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text2)" }}>
                   <span>{item.icon}</span><span>{item.val}</span>

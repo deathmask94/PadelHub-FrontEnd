@@ -356,6 +356,11 @@ export default function Home() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{m.club}</div>
                       <div style={{ display: "flex", gap: 6 }}>
+                        {m.is_ranked && (
+                          <span className="ph-pill" style={{ fontSize: 10, background: "rgba(132,204,22,0.1)", color: "var(--accent)", border: "1px solid var(--border2)" }}>
+                            🏆 Competitivo
+                          </span>
+                        )}
                         {m.gender_preference && (
                           <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
                             {m.gender_preference === "Masculino" ? "Solo hombres" : "Solo mujeres"}

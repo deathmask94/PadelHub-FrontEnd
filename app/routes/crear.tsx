@@ -75,6 +75,9 @@ export default function CrearPartido() {
   const [showTime,       setShowTime]       = useState(false);
 
   const [formato,        setFormato]        = useState<"dobles"|"individual">("individual");
+  // Dobles solo existe en modo casual (no afecta MMR); el modo competitivo
+  // ("por los puntos") solo esta disponible en individual.
+  const [modo,           setModo]           = useState<"casual"|"competitivo">("casual");
   const [generoRival,    setGeneroRival]    = useState<"" | "Masculino" | "Femenino">("");
   const [jugadores,      setJugadores]      = useState<(PlayerOption|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
@@ -124,11 +127,16 @@ export default function CrearPartido() {
   const numSlots = formato === "dobles" ? 3 : 1;
   const slots    = jugadores.slice(0, numSlots);
 
+  // En competitivo el rival obligatoriamente debe ser de tu mismo sexo; en
+  // casual respeta lo que se haya elegido en "¿Quién puede unirse?".
+  const pickerGenderFilter = modo === "competitivo" ? (user?.gender ?? "") : generoRival;
+
   const fetchPickerPlayers = useCallback(async (q: string) => {
     setPickerLoading(true);
     try {
       const params = new URLSearchParams();
       if (q.length >= 2) params.set("q", q);
+      if (pickerGenderFilter) params.set("gender", pickerGenderFilter);
       const data = await apiFetch<PlayerOption[]>(`/api/users/search?${params.toString()}`);
       setPickerPlayers(data);
     } catch {
@@ -136,7 +144,7 @@ export default function CrearPartido() {
     } finally {
       setPickerLoading(false);
     }
-  }, []);
+  }, [pickerGenderFilter]);
 
   useEffect(() => {
     if (showPickerIdx === null) { setPickerSearch(""); return; }
@@ -169,10 +177,13 @@ export default function CrearPartido() {
     setTimeout(() => setToast(""), 3000);
   };
 
+  const isCompetitivo = modo === "competitivo";
+
   const handleCrear = async () => {
     if (!selectedClub) { showToastMsg("Selecciona tu ciudad"); return; }
     if (!selectedTime) { showToastMsg("Selecciona una hora"); return; }
     if (!user)         { showToastMsg("Debes iniciar sesión"); return; }
+    if (isCompetitivo && !slots[0]) { showToastMsg("Elige a quién desafías"); return; }
 
     setSaving(true);
     try {
@@ -183,9 +194,10 @@ export default function CrearPartido() {
         organizer_id: user.id,
         club:         selectedClub.nombre,
         format:       formato === "dobles" ? "doubles" : "singles",
+        is_ranked:    isCompetitivo,
         match_date:   matchDate,
         match_time:   matchTime,
-        ...(generoRival ? { gender_preference: generoRival } : {}),
+        ...(!isCompetitivo && generoRival ? { gender_preference: generoRival } : {}),
       });
 
       const selectedPlayers = slots.filter((j): j is PlayerOption => j !== null);
@@ -378,7 +390,11 @@ export default function CrearPartido() {
             <div style={{ display:"flex", gap:10 }}>
               {(["individual","dobles"] as const).map(f=>(
                 <button key={f}
-                  onClick={()=>{setFormato(f);setJugadores([null,null,null]);}}
+                  onClick={()=>{
+                    setFormato(f);
+                    setJugadores([null,null,null]);
+                    if (f === "dobles") setModo("casual"); // dobles solo existe en modo casual
+                  }}
                   className={`ph-format-opt${formato===f?" selected":""}`}>
                   <div style={{ fontSize:22, marginBottom:4 }}>{f==="dobles"?"👥":"🧍"}</div>
                   <div style={{ fontFamily:"var(--font-display)", fontSize:14, fontWeight:700, color:"var(--text)" }}>
@@ -390,7 +406,41 @@ export default function CrearPartido() {
             </div>
           </div>
 
-          {/* 4b. Género permitido para unirse (cupos abiertos) */}
+          {/* 4b. Modo: casual (exhibición, no afecta MMR) vs competitivo (por los puntos) */}
+          <div style={{ marginBottom:14 }}>
+            <label className="ph-label">Modo</label>
+            <div style={{ display:"flex", gap:10 }}>
+              {([
+                { value: "casual" as const,      label: "Casual",      sub: "No afecta tu MMR", icon: "🎉" },
+                { value: "competitivo" as const, label: "Competitivo", sub: "Afecta tu MMR",     icon: "🏆" },
+              ]).map((opt) => {
+                const disabled = opt.value === "competitivo" && formato === "dobles";
+                return (
+                  <button key={opt.value}
+                    disabled={disabled}
+                    onClick={() => { if (!disabled) { setModo(opt.value); setJugadores([null,null,null]); } }}
+                    className={`ph-format-opt${modo===opt.value?" selected":""}`}
+                    style={{ opacity: disabled ? 0.4 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+                  >
+                    <div style={{ fontSize:22, marginBottom:4 }}>{opt.icon}</div>
+                    <div style={{ fontFamily:"var(--font-display)", fontSize:14, fontWeight:700, color:"var(--text)" }}>
+                      {opt.label}
+                    </div>
+                    <div style={{ fontSize:12, color:"var(--text2)" }}>
+                      {disabled ? "Solo en Individual" : opt.sub}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4c. Género: obligatorio mismo sexo en competitivo, elegible en casual */}
+          {isCompetitivo ? (
+            <div style={{ marginBottom:14, fontSize:12, color:"var(--text2)" }}>
+              🔒 Solo jugadores de tu mismo sexo (obligatorio en modo competitivo)
+            </div>
+          ) : (
           <div style={{ marginBottom:14 }}>
             <label className="ph-label">¿Quién puede unirse?</label>
             <div style={{ display:"flex", gap:8 }}>
@@ -409,10 +459,11 @@ export default function CrearPartido() {
               ))}
             </div>
           </div>
+          )}
 
           {/* 5. Jugadores */}
           <div style={{ marginBottom:14 }}>
-            <label className="ph-label">Jugadores</label>
+            <label className="ph-label">{isCompetitivo ? "¿A quién desafías?" : "Jugadores"}</label>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {/* Tú */}
               <div style={{ textAlign:"center" }}>
