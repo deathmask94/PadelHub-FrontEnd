@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch, uploadProfilePhoto, deleteProfilePhoto } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
@@ -46,7 +47,6 @@ function StarDisplay({ value }: { value: number | null }) {
 export default function Perfil() {
   const { user, logout, editarPerfil } = useAuth();
   const navigate    = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [stats,        setStats]        = useState<RankingStats | null>(null);
   const [playerRatings, setPlayerRatings] = useState<PlayerRatings | null>(null);
@@ -91,11 +91,27 @@ export default function Perfil() {
   const mmrChart      = stats?.mmr_chart      ?? [];
   const semanas       = mmrChart.map((_, i) => `P${i + 1}`);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+  const handleTakePhoto = async () => {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source:     CameraSource.Prompt, // deja elegir entre "Tomar foto" y "Elegir de galería"
+        quality:    80,
+      });
+      if (!photo.webPath) return;
+
+      const blob = await (await fetch(photo.webPath)).blob();
+      const file = new File([blob], `perfil.${photo.format ?? "jpg"}`, { type: blob.type });
+
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    } catch (e: unknown) {
+      // El usuario cancelo el selector nativo: no es un error real.
+      const message = e instanceof Error ? e.message : String(e);
+      if (!/cancel/i.test(message)) {
+        setSaveError("No se pudo obtener la foto");
+      }
+    }
   };
 
   const handleDeletePhoto = async () => {
@@ -161,7 +177,6 @@ export default function Perfil() {
 
             {/* Avatar + cámara */}
             <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
               <div style={{ position: "relative" }}>
                 <div
                   className="ph-avatar"
@@ -174,7 +189,7 @@ export default function Perfil() {
                   />
                 </div>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handleTakePhoto}
                   disabled={uploadingPhoto}
                   style={{ position: "absolute", bottom: -4, right: -4, width: 22, height: 22, borderRadius: "50%", background: "var(--accent)", border: "2px solid var(--bg)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
