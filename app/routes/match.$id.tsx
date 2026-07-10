@@ -144,6 +144,26 @@ export default function MatchDetail() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Al llegar a la pantalla de valoraciones, todos parten en 5 estrellas
+  // (estilo Uber); el usuario solo baja las que quiera calificar peor.
+  useEffect(() => {
+    if (!match || match.status !== "finished" || match.has_rated) return;
+    const toRate = [
+      ...(match.is_organizer ? [] : [match.users]),
+      ...match.match_players
+        .filter((mp) => mp.status === "confirmed" && mp.users.id !== user?.id)
+        .map((mp) => mp.users),
+    ].filter((p) => p.id !== user?.id);
+    setRatings((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const p of toRate) {
+        if (!next[p.id]) { next[p.id] = { fair_play: 5, punctuality: 5, skill_level: 5 }; changed = true; }
+      }
+      return changed ? next : prev;
+    });
+  }, [match, user?.id]);
+
   // Refresco automático: para no tener que recargar la página a mano
   // esperando a que el rival acepte o rechace el desafío.
   useEffect(() => {
@@ -848,7 +868,7 @@ export default function MatchDetail() {
           {match.status === "finished" && !ratingDone && (match.can_rate || match.has_rated) && (
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
-                Valorar compañeros y rivales
+                Valora tu experiencia
               </div>
 
               {match.has_rated ? (
@@ -868,7 +888,7 @@ export default function MatchDetail() {
 
                 const setRating = (playerId: string, field: keyof RatingValues, value: number) =>
                   setRatings((prev) => {
-                    const base: RatingValues = prev[playerId] ?? { fair_play: 3, punctuality: 3, skill_level: 3 };
+                    const base: RatingValues = prev[playerId] ?? { fair_play: 5, punctuality: 5, skill_level: 5 };
                     return { ...prev, [playerId]: { ...base, [field]: value } };
                   });
 
@@ -882,14 +902,15 @@ export default function MatchDetail() {
                       body: JSON.stringify({
                         ratings: toRate.map((p) => ({
                           rated_id:    p.id,
-                          fair_play:   ratings[p.id]?.fair_play   ?? 3,
-                          punctuality: ratings[p.id]?.punctuality ?? 3,
-                          skill_level: ratings[p.id]?.skill_level ?? 3,
+                          fair_play:   ratings[p.id]?.fair_play   ?? 5,
+                          punctuality: ratings[p.id]?.punctuality ?? 5,
+                          skill_level: ratings[p.id]?.skill_level ?? 5,
                         })),
                       }),
                     });
                     setRatingDone(true);
                     showToast("¡Valoraciones enviadas!");
+                    navigate("/home");
                   } catch (e: unknown) {
                     showToast(e instanceof Error ? e.message : "Error al enviar valoraciones");
                   } finally {
@@ -899,11 +920,8 @@ export default function MatchDetail() {
 
                 return (
                   <div className="ph-card" style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>
-                      Valoración anónima · válida por 24 h tras finalizar
-                    </div>
                     {toRate.map((p, i) => {
-                      const r = ratings[p.id] ?? { fair_play: 0, punctuality: 0, skill_level: 0 };
+                      const r = ratings[p.id] ?? { fair_play: 5, punctuality: 5, skill_level: 5 };
                       return (
                         <div key={p.id} style={{
                           paddingBottom: 14, marginBottom: 14,

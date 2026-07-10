@@ -231,22 +231,31 @@ export default function AdminPartidoDetailPage() {
                   <div style={{ fontSize: 13, color: "var(--text2)" }}>Sin resultado registrado</div>
                 ) : (
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 12 }}>
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>EQUIPO A</div>
-                        <div style={{ fontSize: 32, fontWeight: 800 }}>{match.match_results.score_team_a}</div>
-                      </div>
-                      <div style={{ fontSize: 18, color: "var(--text2)", fontWeight: 300 }}>—</div>
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>EQUIPO B</div>
-                        <div style={{ fontSize: 32, fontWeight: 800 }}>{match.match_results.score_team_b}</div>
-                      </div>
-                      <div style={{ marginLeft: "auto" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 12 }}>
+                      {match.match_results.score_team_a.split("-").map((a, i) => {
+                        const b = match.match_results!.score_team_b.split("-")[i];
+                        const aWins = Number(a) > Number(b);
+                        return (
+                          <div key={i} style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>SET {i + 1}</div>
+                            <div style={{ fontSize: 22, fontWeight: 800 }}>
+                              <span style={{ color: aWins ? "#60a5fa" : "var(--text2)" }}>{a}</span>
+                              <span style={{ color: "var(--text2)" }}> – </span>
+                              <span style={{ color: !aWins ? "#f472b6" : "var(--text2)" }}>{b}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div style={{ marginLeft: "auto", textAlign: "right" }}>
                         <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>GANADOR</div>
                         <div style={{ fontWeight: 700, fontSize: 14, color: "var(--accent)" }}>
                           {WINNER_LABELS[match.match_results.winner] ?? match.match_results.winner}
                         </div>
                       </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 16, fontSize: 11, color: "var(--text2)", marginBottom: 10 }}>
+                      <span><span style={{ color: "#60a5fa" }}>●</span> Equipo A</span>
+                      <span><span style={{ color: "#f472b6" }}>●</span> Equipo B</span>
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text2)" }}>
                       Registrado por {match.match_results.users.name} · {fmtDate(match.match_results.registered_at)}
