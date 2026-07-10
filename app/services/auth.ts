@@ -112,6 +112,13 @@ function refreshAccessToken(): Promise<boolean> {
   return refreshPromise.finally(() => { refreshPromise = null; });
 }
 
+// Endpoints publicos donde un 401 significa "credenciales invalidas", no
+// "tu sesion expiro" — no hay sesion que refrescar ni por la que redirigir
+// a /login (ya estamos ahi). Sin esta lista, un intento de login con la
+// contrasena equivocada terminaba mostrando "Sesion expirada" en vez del
+// error real, porque el 401 disparaba el mismo flujo que un token vencido.
+const AUTH_ENDPOINTS = new Set(['/api/auth/login', '/api/users']);
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API}${path}`, {
@@ -123,7 +130,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}, isRet
     },
   });
 
-  if (res.status === 401 && !isRetry) {
+  if (res.status === 401 && !isRetry && !AUTH_ENDPOINTS.has(path)) {
     const refreshed = await refreshAccessToken();
     if (refreshed) return apiFetch<T>(path, options, true);
     clearSession();
