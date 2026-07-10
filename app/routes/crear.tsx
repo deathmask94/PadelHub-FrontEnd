@@ -43,11 +43,12 @@ function getTimeSlots(abre: string, cierra: string): string[] {
 }
 
 const DIAS_ES   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const MESES_ES  = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_FULL= ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
 function formatDateStr(d: Date) {
-  return `${DIAS_ES[d.getDay()]} ${d.getDate()} ${MESES_ES[d.getMonth()]}`;
+  return `${DIAS_FULL[d.getDay()]} ${d.getDate()} de ${MESES_FULL[d.getMonth()]}`;
 }
 
 function toDateKey(d: Date) {
@@ -361,13 +362,21 @@ export default function CrearPartido() {
                 </div>
               </div>
             )}
+            {showTime && timeSlots.length===0 && (
+              <div style={{
+                background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:12,
+                marginTop:6, padding:"12px 16px", fontSize:13, color:"var(--text2)",
+              }}>
+                No quedan horarios disponibles hoy para este club (ya cerró o el día se acabó). Elige otra fecha.
+              </div>
+            )}
           </div>
 
           {/* 4. Formato */}
           <div style={{ marginBottom:14 }}>
             <label className="ph-label">Formato</label>
             <div style={{ display:"flex", gap:10 }}>
-              {(["dobles","individual"] as const).map(f=>(
+              {(["individual","dobles"] as const).map(f=>(
                 <button key={f}
                   onClick={()=>{setFormato(f);setJugadores([null,null,null]);}}
                   className={`ph-format-opt${formato===f?" selected":""}`}>
@@ -383,7 +392,7 @@ export default function CrearPartido() {
 
           {/* 4b. Género permitido para unirse (cupos abiertos) */}
           <div style={{ marginBottom:14 }}>
-            <label className="ph-label">Género para unirse a los cupos abiertos</label>
+            <label className="ph-label">¿Quién puede unirse?</label>
             <div style={{ display:"flex", gap:8 }}>
               {([
                 { value: "" as const,          label: "Todos" },
@@ -505,14 +514,6 @@ export default function CrearPartido() {
           </div>
 
           {/* Info visibilidad */}
-          <div style={{
-            background: "rgba(132,204,22,0.08)", border: "1px solid var(--border2)",
-            borderRadius: 10, padding: "10px 14px", fontSize: 12,
-            color: "var(--accent)", marginBottom: 20,
-          }}>
-            🔔 El partido quedará visible en <strong>Disponibles</strong> para todos los jugadores de la app.
-          </div>
-
           <button className="ph-btn" onClick={handleCrear} disabled={saving} style={{ marginBottom:8 }}>
             {saving ? "Creando..." : "Crear partido"}
           </button>
