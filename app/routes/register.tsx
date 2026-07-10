@@ -141,8 +141,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="ph-screen" style={{ justifyContent: "center" }}>
-      <div style={{ padding: "0 28px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+    <div className="ph-screen">
+      <div className="ph-scroll" style={{ padding: "20px 28px 32px" }}>
 
         {/* Logo */}
         <div className="fade-up" style={{ textAlign: "center", marginBottom: 24 }}>
