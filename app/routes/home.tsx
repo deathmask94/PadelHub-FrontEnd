@@ -226,12 +226,10 @@ export default function Home() {
         ) : (
           <div
             className="ph-card"
-            style={{ marginBottom: 20, textAlign: "center", padding: "20px 16px", border: "1px dashed var(--border)", cursor: "pointer" }}
-            onClick={() => navigate("/crear")}
+            style={{ marginBottom: 20, textAlign: "center", padding: "20px 16px", border: "1px dashed var(--border)" }}
           >
             <div style={{ fontSize: 28, marginBottom: 8 }}>🎾</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Sin partido próximo</div>
-            <div style={{ fontSize: 12, color: "var(--accent)" }}>+ Crear uno ahora</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Sin partido próximo</div>
           </div>
         )}
 
