@@ -25,7 +25,7 @@ function formatTime(s: string) {
 }
 
 interface PlayerUser { id: string; name: string; photo_url: string | null; level: string; mmr: number; }
-interface MatchPlayer { id: string; user_id: string; status: string; team: string; users: PlayerUser; }
+interface MatchPlayer { id: string; user_id: string; status: string; team: string; result_confirmed: boolean; users: PlayerUser; }
 interface MMRChange { id: string; before: number; after: number; delta: number; }
 
 interface MatchDetail {
@@ -33,11 +33,11 @@ interface MatchDetail {
   match_date: string; match_time: string; ends_at?: string;
   organizer_id: string; is_organizer: boolean; my_status: string | null;
   max_players: number; can_rate: boolean; has_rated: boolean;
-  is_ranked: boolean;
+  is_ranked: boolean; gender_preference: "Masculino" | "Femenino" | null;
   users: PlayerUser;
   match_players: MatchPlayer[];
   match_results: {
-    registered_by: string; confirmed_by: string | null;
+    registered_by: string; confirmed_by: string | null; confirmed_at: string | null;
     score_team_a: string; score_team_b: string; winner: "team_a" | "team_b";
   } | null;
 }
@@ -297,11 +297,20 @@ export default function MatchDetail() {
     if (!id) return;
     setConfirmingResult(true);
     try {
-      const data = await apiFetch<{ changes: MMRChange[] }>(`/api/matches/${id}/result/confirm`, {
-        method: "POST",
-      });
-      setMmrChanges(data.changes);
-      showToast("¡Resultado confirmado!");
+      const data = await apiFetch<{ fully_confirmed: boolean; pending?: string[]; changes?: MMRChange[] }>(
+        `/api/matches/${id}/result/confirm`,
+        { method: "POST" },
+      );
+      if (data.fully_confirmed) {
+        setMmrChanges(data.changes ?? []);
+        showToast("¡Resultado confirmado!");
+      } else {
+        showToast(
+          data.pending && data.pending.length > 0
+            ? `Confirmado. Falta: ${data.pending.join(", ")}`
+            : "Confirmación registrada"
+        );
+      }
       await load();
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al confirmar resultado");
@@ -370,13 +379,20 @@ export default function MatchDetail() {
   // curso" para siempre y nadie mas puede registrar el resultado por el.
   const mustRegisterResult = match.is_organizer && (match.status === "in_progress" || match.status === "confirmed") && !match.match_results;
 
-  // Uno de los dos registra el resultado, el otro solo lo confirma (sin
-  // volver a ingresar nada) -- asi el MMR no queda a criterio de un solo
-  // jugador. Mientras no se confirme, el partido sigue sin finalizar.
+  // El organizador registra el resultado; en dobles TODOS los demas
+  // jugadores confirmados deben confirmarlo (no basta uno solo) para que el
+  // MMR no quede a criterio de un solo compañero de equipo. En singles esto
+  // se reduce naturalmente a "el rival confirma". Mientras falte alguien,
+  // el partido sigue sin finalizar.
   const iAmConfirmedPlayer = match.is_organizer || match.match_players.some((p) => p.user_id === user?.id && p.status === "confirmed");
   const hasPendingResult   = !!match.match_results && !match.match_results.confirmed_by;
   const iRegisteredResult  = match.match_results?.registered_by === user?.id;
-  const canConfirmResult   = hasPendingResult && !iRegisteredResult && iAmConfirmedPlayer;
+  const myPlayerRow        = match.match_players.find((p) => p.user_id === user?.id);
+  const iAlreadyConfirmed  = myPlayerRow?.result_confirmed === true;
+  const canConfirmResult   = hasPendingResult && !iRegisteredResult && iAmConfirmedPlayer && !iAlreadyConfirmed;
+  const pendingConfirmers  = match.match_players
+    .filter((p) => p.status === "confirmed" && !p.result_confirmed)
+    .map((p) => p.users.name);
 
   return (
     <div className="ph-screen">
@@ -411,6 +427,10 @@ export default function MatchDetail() {
                 { icon: "🎾", val: match.format === "doubles" ? "Dobles (2v2)" : "Individual (1v1)" },
                 { icon: "👥", val: `${filledSlots}/${maxPlayers} jugadores` },
                 { icon: match.is_ranked ? "🏆" : "🎉", val: match.is_ranked ? "Competitivo — afecta MMR" : "Casual — no afecta MMR" },
+                {
+                  icon: match.gender_preference === "Masculino" ? "♂" : match.gender_preference === "Femenino" ? "♀" : "⚥",
+                  val: match.gender_preference === "Masculino" ? "Solo hombres" : match.gender_preference === "Femenino" ? "Solo mujeres" : "Mixto",
+                },
               ].map((item) => (
                 <div key={item.icon} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text2)" }}>
                   <span>{item.icon}</span><span>{item.val}</span>
@@ -811,13 +831,16 @@ export default function MatchDetail() {
             </div>
           )}
 
-          {/* ── Esperando confirmación del rival ── */}
-          {hasPendingResult && iRegisteredResult && (
+          {/* ── Esperando confirmación de los demás jugadores ── */}
+          {hasPendingResult && (iRegisteredResult || iAlreadyConfirmed) && (
             <div style={{
               background: "rgba(250,204,21,0.08)", border: "1px solid #facc15",
               borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "var(--text2)",
             }}>
-              ⏳ Resultado enviado. Esperando que tu rival lo confirme para que se registre.
+              {iAlreadyConfirmed ? "✓ Ya confirmaste el resultado. " : "⏳ Resultado enviado. "}
+              {pendingConfirmers.length > 0
+                ? `Esperando confirmación de: ${pendingConfirmers.join(", ")}.`
+                : "Esperando que se confirme el resultado."}
             </div>
           )}
 

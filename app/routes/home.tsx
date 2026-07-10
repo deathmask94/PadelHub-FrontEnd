@@ -280,14 +280,19 @@ export default function Home() {
             <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}>
               {formatTime(proximoPartido.match_time)} · {proximoPartido.format === "doubles" ? "Dobles" : "Individual"}
             </div>
-            <span className="ph-pill" style={{
-              fontSize: 10,
-              background: proximoPartido.is_ranked ? "rgba(132,204,22,0.1)" : "var(--bg3)",
-              color: proximoPartido.is_ranked ? "var(--accent)" : "var(--text2)",
-              border: `1px solid ${proximoPartido.is_ranked ? "var(--border2)" : "var(--border)"}`,
-            }}>
-              {proximoPartido.is_ranked ? "🏆 Competitivo" : "🎉 Casual"}
-            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              <span className="ph-pill" style={{
+                fontSize: 10,
+                background: proximoPartido.is_ranked ? "rgba(132,204,22,0.1)" : "var(--bg3)",
+                color: proximoPartido.is_ranked ? "var(--accent)" : "var(--text2)",
+                border: `1px solid ${proximoPartido.is_ranked ? "var(--border2)" : "var(--border)"}`,
+              }}>
+                {proximoPartido.is_ranked ? "🏆 Competitivo" : "🎉 Casual"}
+              </span>
+              <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
+                {proximoPartido.gender_preference === "Masculino" ? "Solo hombres" : proximoPartido.gender_preference === "Femenino" ? "Solo mujeres" : "Mixto"}
+              </span>
+            </div>
           </div>
         ) : (
           <div
@@ -431,11 +436,9 @@ export default function Home() {
                             🎉 Casual
                           </span>
                         )}
-                        {m.gender_preference && (
-                          <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
-                            {m.gender_preference === "Masculino" ? "Solo hombres" : "Solo mujeres"}
-                          </span>
-                        )}
+                        <span className="ph-pill" style={{ fontSize: 10, background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border)" }}>
+                          {m.gender_preference === "Masculino" ? "Solo hombres" : m.gender_preference === "Femenino" ? "Solo mujeres" : "Mixto"}
+                        </span>
                         <span className="ph-pill ph-pill-green" style={{ fontSize: 10 }}>Abierto</span>
                       </div>
                     </div>
