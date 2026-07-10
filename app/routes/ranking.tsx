@@ -44,10 +44,14 @@ export default function Ranking() {
       .finally(() => setLoading(false));
   }, [zona, page]);
 
-  // El podio (top 3) solo tiene sentido en la primera página; en el resto
-  // se muestra la lista plana continuando la numeración de posición.
-  const podio = page === 1 ? data.slice(0, 3) : [];
-  const lista = page === 1 ? data.slice(3) : data;
+  // El podio (top 3) solo tiene sentido en la primera página y cuando hay
+  // al menos 3 jugadores; si no, se muestran todos en la lista plana. Sin
+  // este chequeo, una zona con 1 o 2 jugadores no mostraba a nadie: no
+  // alcanzaban para el podio (mínimo 3) y slice(3) los dejaba fuera de la
+  // lista tambien.
+  const showPodio = page === 1 && data.length >= 3;
+  const podio = showPodio ? data.slice(0, 3) : [];
+  const lista = showPodio ? data.slice(3) : data;
 
   return (
     <div className="ph-screen">
