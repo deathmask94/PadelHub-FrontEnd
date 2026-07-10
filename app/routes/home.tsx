@@ -202,7 +202,11 @@ export default function Home() {
             Cargando…
           </div>
         ) : proximoPartido ? (
-          <div className="ph-upcoming-card" style={{ marginBottom: 20 }}>
+          <div
+            className="ph-upcoming-card"
+            style={{ marginBottom: 20, cursor: "pointer" }}
+            onClick={() => navigate(`/matches/${proximoPartido.id}`)}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span className={`ph-pill ${STATUS_CLASS[proximoPartido.status] ?? "ph-pill-gray"}`}>
                 {STATUS_LABEL[proximoPartido.status]}
