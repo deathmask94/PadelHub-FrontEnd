@@ -19,7 +19,7 @@ const DISMISS_THRESHOLD = 90;
 // se mueve con el dedo; al soltar, si paso el umbral se anima hacia afuera
 // y colapsa su alto (asi la de abajo "sube" a ocupar el lugar) antes de
 // sacarla del estado.
-function SwipeableRow({ children, onDismiss }: { children: React.ReactNode; onDismiss: () => void }) {
+function SwipeableRow({ children, onDismiss, onTap }: { children: React.ReactNode; onDismiss: () => void; onTap?: () => void }) {
   const [dragX, setDragX] = useState(0);
   const [phase, setPhase] = useState<"idle" | "dragging" | "leaving">("idle");
   const startX = useRef<number | null>(null);
@@ -34,6 +34,9 @@ function SwipeableRow({ children, onDismiss }: { children: React.ReactNode; onDi
     const delta = e.clientX - startX.current;
     if (delta > 0) setDragX(delta);
   };
+  // El pointer capture en este div "recaptura" el click nativo hacia aca
+  // (nunca burbujea desde el hijo), asi que el tap se detecta aca mismo:
+  // si soltaste sin arrastrar practicamente nada, cuenta como toque.
   const handlePointerUp = () => {
     if (startX.current === null) return;
     startX.current = null;
@@ -42,6 +45,7 @@ function SwipeableRow({ children, onDismiss }: { children: React.ReactNode; onDi
       setDragX(600);
       setTimeout(onDismiss, 220);
     } else {
+      if (dragX < 10) onTap?.();
       setPhase("idle");
       setDragX(0);
     }
@@ -73,10 +77,9 @@ function SwipeableRow({ children, onDismiss }: { children: React.ReactNode; onDi
   );
 }
 
-function NotificationRow({ n, i, total, onClick }: { n: Notification; i: number; total: number; onClick: () => void }) {
+function NotificationRow({ n, i, total }: { n: Notification; i: number; total: number }) {
   return (
     <div
-      onClick={onClick}
       style={{
         display: "flex", gap: 12, padding: "14px 16px",
         background: n.read ? "transparent" : "rgba(132,204,22,0.06)",
@@ -164,11 +167,12 @@ export default function Notificaciones() {
               </div>
               <div className="ph-card" style={{ padding: 0, overflow: "hidden" }}>
                 {notifs.map((n, i) => (
-                  <SwipeableRow key={n.id} onDismiss={() => dismiss(n.id)}>
-                    <NotificationRow
-                      n={n} i={i} total={notifs.length}
-                      onClick={() => { if (!n.read) markRead(n.id); }}
-                    />
+                  <SwipeableRow
+                    key={n.id}
+                    onDismiss={() => dismiss(n.id)}
+                    onTap={() => { if (!n.read) markRead(n.id); }}
+                  >
+                    <NotificationRow n={n} i={i} total={notifs.length} />
                   </SwipeableRow>
                 ))}
               </div>
