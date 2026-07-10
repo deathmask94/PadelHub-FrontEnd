@@ -100,8 +100,9 @@ export interface RankingPage {
   totalPages: number;
 }
 
-export async function getRanking(zone?: string, page = 1): Promise<RankingPage> {
+export async function getRanking(zone?: string, page = 1, gender?: 'Masculino' | 'Femenino'): Promise<RankingPage> {
   const params = new URLSearchParams({ page: String(page) });
-  if (zone) params.set('zone', zone);
+  if (zone)   params.set('zone', zone);
+  if (gender) params.set('gender', gender);
   return apiFetch<RankingPage>(`/api/ranking?${params.toString()}`);
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch } from "~/services/auth";
@@ -36,6 +36,10 @@ interface MatchDetail {
   is_ranked: boolean;
   users: PlayerUser;
   match_players: MatchPlayer[];
+  match_results: {
+    registered_by: string; confirmed_by: string | null;
+    score_team_a: string; score_team_b: string; winner: "team_a" | "team_b";
+  } | null;
 }
 
 type RatingValues = { fair_play: number; punctuality: number; skill_level: number };
@@ -118,7 +122,10 @@ export default function MatchDetail() {
     sets: [EMPTY_SET, EMPTY_SET, EMPTY_SET],
   });
   const [submittingResult, setSubmittingResult] = useState(false);
+  const [confirmingResult, setConfirmingResult] = useState(false);
   const [mmrChanges,       setMmrChanges]       = useState<MMRChange[] | null>(null);
+  const resultSectionRef = useRef<HTMLDivElement>(null);
+  const scrollToResult = () => resultSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const [confirmCancel,  setConfirmCancel]  = useState(false);
   const [confirmLeave,   setConfirmLeave]   = useState(false);
@@ -268,7 +275,7 @@ export default function MatchDetail() {
     if (!id || !canSubmitResult) return;
     setSubmittingResult(true);
     try {
-      const data = await apiFetch<{ changes: MMRChange[] }>(`/api/matches/${id}/result`, {
+      await apiFetch(`/api/matches/${id}/result`, {
         method: "POST",
         body: JSON.stringify({
           winner:         matchWinner,
@@ -277,12 +284,29 @@ export default function MatchDetail() {
           score_team_b:   playedSets.map((s) => s.gamesB).join("-"),
         }),
       });
-      setMmrChanges(data.changes);
+      showToast("Resultado enviado, falta que tu rival lo confirme");
       await load();
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al registrar resultado");
     } finally {
       setSubmittingResult(false);
+    }
+  };
+
+  const handleConfirmResult = async () => {
+    if (!id) return;
+    setConfirmingResult(true);
+    try {
+      const data = await apiFetch<{ changes: MMRChange[] }>(`/api/matches/${id}/result/confirm`, {
+        method: "POST",
+      });
+      setMmrChanges(data.changes);
+      showToast("¡Resultado confirmado!");
+      await load();
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error al confirmar resultado");
+    } finally {
+      setConfirmingResult(false);
     }
   };
 
@@ -339,7 +363,15 @@ export default function MatchDetail() {
   // Si el organizador tiene el resultado pendiente, no puede salir de la
   // pantalla sin registrarlo (ni saltarselo): el partido quedaria "en
   // curso" para siempre y nadie mas puede registrar el resultado por el.
-  const mustRegisterResult = match.is_organizer && (match.status === "in_progress" || match.status === "confirmed") && !mmrChanges;
+  const mustRegisterResult = match.is_organizer && (match.status === "in_progress" || match.status === "confirmed") && !match.match_results;
+
+  // Uno de los dos registra el resultado, el otro solo lo confirma (sin
+  // volver a ingresar nada) -- asi el MMR no queda a criterio de un solo
+  // jugador. Mientras no se confirme, el partido sigue sin finalizar.
+  const iAmConfirmedPlayer = match.is_organizer || match.match_players.some((p) => p.user_id === user?.id && p.status === "confirmed");
+  const hasPendingResult   = !!match.match_results && !match.match_results.confirmed_by;
+  const iRegisteredResult  = match.match_results?.registered_by === user?.id;
+  const canConfirmResult   = hasPendingResult && !iRegisteredResult && iAmConfirmedPlayer;
 
   return (
     <div className="ph-screen">
@@ -610,10 +642,13 @@ export default function MatchDetail() {
           )}
 
           {/* ── Resultado ── */}
-          {match.is_organizer && (match.status === "in_progress" || match.status === "confirmed") && !mmrChanges && (
-            <>
+          {match.is_organizer && (match.status === "in_progress" || match.status === "confirmed") && !match.match_results && (
+            <div ref={resultSectionRef}>
               <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, marginTop: 8 }}>
                 Registrar resultado
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10 }}>
+                Recuerda completar el resultado del partido una vez finalizado junto a tu contrincante para evitar discrepancias 🙂
               </div>
               <div className="ph-card" style={{ marginBottom: 16 }}>
 
@@ -718,7 +753,55 @@ export default function MatchDetail() {
                   {submittingResult ? "Registrando…" : "Registrar resultado"}
                 </button>
               </div>
-            </>
+            </div>
+          )}
+
+          {/* ── Resultado pendiente de confirmar (rival) ── */}
+          {canConfirmResult && match.match_results && (
+            <div ref={resultSectionRef}>
+              <div style={{ fontSize: 11, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, marginTop: 8 }}>
+                Confirmar resultado
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10 }}>
+                Recuerda completar el resultado del partido una vez finalizado junto a tu contrincante para evitar discrepancias 🙂
+              </div>
+              <div className="ph-card" style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 14 }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>EQUIPO A</div>
+                    <div style={{ fontSize: 22, fontWeight: 800 }}>{match.match_results.score_team_a}</div>
+                  </div>
+                  <div style={{ fontSize: 16, color: "var(--text2)" }}>—</div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>EQUIPO B</div>
+                    <div style={{ fontSize: 22, fontWeight: 800 }}>{match.match_results.score_team_b}</div>
+                  </div>
+                  <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                    <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>GANADOR</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--accent)" }}>
+                      {match.match_results.winner === "team_a" ? "Equipo A" : "Equipo B"}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  className="ph-btn"
+                  onClick={handleConfirmResult}
+                  disabled={confirmingResult}
+                >
+                  {confirmingResult ? "Confirmando…" : "✓ Confirmar resultado"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Esperando confirmación del rival ── */}
+          {hasPendingResult && iRegisteredResult && (
+            <div style={{
+              background: "rgba(250,204,21,0.08)", border: "1px solid #facc15",
+              borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "var(--text2)",
+            }}>
+              ⏳ Resultado enviado. Esperando que tu rival lo confirme para que se registre.
+            </div>
           )}
 
           {/* ── Resultado registrado: cambios de MMR ── */}
@@ -753,6 +836,26 @@ export default function MatchDetail() {
                 })}
               </div>
             </>
+          )}
+
+          {/* ── Atajo a registrar/confirmar resultado ── */}
+          {mustRegisterResult && (
+            <button
+              onClick={scrollToResult}
+              className="ph-btn"
+              style={{ marginBottom: 8 }}
+            >
+              🏁 Partido terminado
+            </button>
+          )}
+          {canConfirmResult && (
+            <button
+              onClick={scrollToResult}
+              className="ph-btn"
+              style={{ marginBottom: 8 }}
+            >
+              ✅ Confirmar resultado
+            </button>
           )}
 
           {/* ── Cancelar partido (organizador) ── */}

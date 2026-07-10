@@ -27,22 +27,23 @@ export default function Ranking() {
 
   const [zona,       setZona]       = useState(user?.zona ?? "Valparaíso");
   const [showZonas,  setShowZonas]  = useState(false);
+  const [genero,     setGenero]     = useState<"" | "Masculino" | "Femenino">("");
   const [data,       setData]       = useState<RankingEntry[]>([]);
   const [page,       setPage]       = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState("");
 
-  useEffect(() => { setPage(1); }, [zona]);
+  useEffect(() => { setPage(1); }, [zona, genero]);
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    getRanking(zona, page)
+    getRanking(zona, page, genero || undefined)
       .then((res) => { setData(res.players ?? []); setTotalPages(res.totalPages ?? 1); })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [zona, page]);
+  }, [zona, page, genero]);
 
   // El podio (top 3) solo tiene sentido en la primera página y cuando hay
   // al menos 3 jugadores; si no, se muestran todos en la lista plana. Sin
@@ -85,6 +86,24 @@ export default function Ranking() {
         </div>
 
         <div style={{ padding: "0 20px" }}>
+
+          {/* Filtro de género: el ranking solo cuenta partidos competitivos,
+              asi que separar por sexo mantiene el podio comparable. */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {([
+              { value: "" as const,          label: "Todos" },
+              { value: "Masculino" as const, label: "Hombres" },
+              { value: "Femenino" as const,  label: "Mujeres" },
+            ]).map((opt) => (
+              <button key={opt.label} type="button"
+                onClick={() => setGenero(opt.value)}
+                className={`ph-format-opt${genero === opt.value ? " selected" : ""}`}
+                style={{ flex: 1, padding: "8px 0" }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
           {loading && (
             <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text2)", fontSize: 14 }}>
