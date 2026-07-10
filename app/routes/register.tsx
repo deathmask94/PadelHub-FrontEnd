@@ -88,6 +88,7 @@ export default function RegisterPage() {
         zone:       form.ciudad,
         gender:     form.genero as "Masculino" | "Femenino",
         birth_date: form.fechaNacimiento || undefined,
+        nivel_estimado: form.nivel as "Principiante" | "Intermedio" | "Avanzado",
       });
       // Asegurar que la pantalla se vea al menos 2 segundos
       const elapsed = Date.now() - start;

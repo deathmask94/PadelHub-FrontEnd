@@ -164,6 +164,7 @@ export async function registerUser(params: {
   zone: string;
   gender: "Masculino" | "Femenino";
   birth_date?: string;
+  nivel_estimado?: "Principiante" | "Intermedio" | "Avanzado";
 }): Promise<{ user: FrontendUser }> {
   const data = await apiFetch<{ user: User; token: string; refreshToken: string }>('/api/users', {
     method: 'POST',

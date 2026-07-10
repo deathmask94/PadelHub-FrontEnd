@@ -34,6 +34,7 @@ interface AuthContextType {
     zone: string;
     gender: "Masculino" | "Femenino";
     birth_date?: string;
+    nivel_estimado?: "Principiante" | "Intermedio" | "Avanzado";
   }) => Promise<void>;
   logout: () => Promise<void>;
   editarPerfil: (data: Partial<FrontendUser>) => Promise<void>;
@@ -78,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     zone: string;
     gender: "Masculino" | "Femenino";
     birth_date?: string;
+    nivel_estimado?: "Principiante" | "Intermedio" | "Avanzado";
   }) => {
     const { user } = await registerUser(data);
     setUser(user);
