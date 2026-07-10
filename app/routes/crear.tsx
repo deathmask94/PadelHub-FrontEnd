@@ -33,11 +33,11 @@ function getTimeSlots(abre: string, cierra: string): string[] {
   const slots: string[] = [];
   const [ah, am] = abre.split(":").map(Number);
   const [ch, cm] = cierra.split(":").map(Number);
-  let h = ah, m = am;
+  let h = ah;
+  const m = am;
   while (h < ch || (h === ch && m <= cm)) {
     slots.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);
-    m += 30;
-    if (m >= 60) { m -= 60; h++; }
+    h++;
   }
   return slots;
 }
