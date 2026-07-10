@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiFetch } from "~/services/auth";
+import { registerPushNotifications } from "~/services/push";
 
 export interface Notification {
   id: string;
@@ -62,6 +63,7 @@ export function NotificationsProvider({
     }
     setLoading(true);
     refresh();
+    registerPushNotifications();
     const id = setInterval(refresh, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [enabled, refresh]);

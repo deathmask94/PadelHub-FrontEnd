@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "584188310097",
+    "project_id": "padelhub-31b2d",
+    "storage_bucket": "padelhub-31b2d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584188310097:android:11d11b5db089ea13a97e70",
+        "android_client_info": {
+          "package_name": "com.padelhub.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4KqbTuDbBL425FfigUBRzHOMbmyXzYmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
