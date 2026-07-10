@@ -492,7 +492,7 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              myMatches.slice(0, 10).map((m) => {
+              myMatches.slice(0, 5).map((m) => {
                 const myEntry = (m as Match & { match_players?: { user_id: string; status: string }[] })
                   .match_players?.find((p) => p.user_id === user?.id);
                 const isPending = myEntry?.status === 'pending';

@@ -309,8 +309,7 @@ export default function MatchDetail() {
         body: JSON.stringify({ accept }),
       });
       showToast(accept ? "¡Te has unido al partido!" : "Invitación rechazada");
-      if (accept) await load();
-      else { setTimeout(() => navigate("/home"), 1500); }
+      setTimeout(() => navigate("/home"), 1500);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al responder");
     } finally {
