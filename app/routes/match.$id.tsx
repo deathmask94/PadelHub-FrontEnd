@@ -813,7 +813,7 @@ export default function MatchDetail() {
           {/* ── Abandonar partido (jugador) ── */}
           {!match.is_organizer &&
             ["open", "confirmed"].includes(match.status) &&
-            (match.my_status === "confirmed" || match.my_status === "pending") && (
+            match.my_status === "confirmed" && (
             <div style={{ marginTop: 8 }}>
               {!confirmLeave ? (
                 <button
