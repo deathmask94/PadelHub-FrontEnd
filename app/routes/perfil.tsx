@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch, uploadProfilePhoto, deleteProfilePhoto } from "~/services/auth";
@@ -66,7 +66,7 @@ export default function Perfil() {
   const [savingUsername,  setSavingUsername]  = useState(false);
   const [usernameError,   setUsernameError]   = useState("");
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
     if (!user?.rut) return;
     apiFetch<{ stats: RankingStats }>(`/api/users/${user.rut}/profile`)
       .then((d) => setStats(d.stats))
@@ -75,6 +75,10 @@ export default function Perfil() {
       .then((d) => setPlayerRatings(d.ratings))
       .catch(() => {});
   }, [user?.rut]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   // Keep form in sync with context (e.g. after save)
   useEffect(() => {
@@ -144,6 +148,7 @@ export default function Perfil() {
         setPhotoFile(null);
       }
       await editarPerfil({ zona, reminder_enabled: reminderEnabled });
+      loadStats();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
     } catch (e: unknown) {

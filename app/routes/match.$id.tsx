@@ -567,10 +567,11 @@ export default function MatchDetail() {
                     <label className="ph-label">Equipo</label>
                     <div style={{ display: "flex", gap: 8 }}>
                       {([
+                        { value: "" as const, label: "Automático", count: null },
                         { value: "team_a" as const, label: "Equipo A", count: teamACount },
                         { value: "team_b" as const, label: "Equipo B", count: teamBCount },
                       ]).map((opt) => {
-                        const full = opt.count >= 2;
+                        const full = opt.count !== null && opt.count >= 2;
                         return (
                           <button key={opt.label} type="button"
                             disabled={full}
@@ -578,16 +579,11 @@ export default function MatchDetail() {
                             className={`ph-format-opt${inviteTeam === opt.value ? " selected" : ""}`}
                             style={{ flex: 1, padding: "8px 0", fontSize: 12, opacity: full ? 0.4 : 1, cursor: full ? "not-allowed" : "pointer" }}
                           >
-                            {opt.label} {full ? "(lleno)" : `(${opt.count}/2)`}
+                            {opt.label} {opt.count !== null ? (full ? "(lleno)" : `(${opt.count}/2)`) : ""}
                           </button>
                         );
                       })}
                     </div>
-                    {!inviteTeam && (
-                      <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 6 }}>
-                        Elige un equipo antes de invitar a un jugador
-                      </div>
-                    )}
                   </div>
                 )}
                 <input
@@ -636,13 +632,13 @@ export default function MatchDetail() {
                     </div>
                     <button
                       onClick={() => handleInvite(u.id)}
-                      disabled={inviting === u.id || (match.format === "doubles" && !inviteTeam)}
+                      disabled={inviting === u.id}
                       style={{
                         padding: "6px 12px", borderRadius: 8, border: "none",
                         background: "rgba(132,204,22,0.12)", color: "var(--accent)",
                         fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
-                        cursor: (match.format === "doubles" && !inviteTeam) ? "not-allowed" : "pointer",
-                        opacity: (match.format === "doubles" && !inviteTeam) ? 0.4 : 1,
+                        cursor: inviting === u.id ? "not-allowed" : "pointer",
+                        opacity: inviting === u.id ? 0.4 : 1,
                       }}
                     >
                       {inviting === u.id ? "…" : "Invitar"}
