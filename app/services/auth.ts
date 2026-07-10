@@ -228,6 +228,7 @@ export async function updateProfile(
   if (updates.nombre            !== undefined) backendUpdates.name             = updates.nombre;
   if (updates.zona              !== undefined) backendUpdates.zone             = updates.zona;
   if (updates.reminder_enabled  !== undefined) backendUpdates.reminder_enabled = updates.reminder_enabled;
+  if (updates.username          !== undefined) backendUpdates.username         = updates.username;
 
   const data = await apiFetch<{ user: User }>(`/api/users/${rut}/profile`, {
     method: 'PUT',

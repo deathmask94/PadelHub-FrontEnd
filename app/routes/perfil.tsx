@@ -61,6 +61,11 @@ export default function Perfil() {
   const [saveError,       setSaveError]       = useState("");
   const [saveSuccess,     setSaveSuccess]     = useState(false);
 
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput,   setUsernameInput]   = useState("");
+  const [savingUsername,  setSavingUsername]  = useState(false);
+  const [usernameError,   setUsernameError]   = useState("");
+
   useEffect(() => {
     if (!user?.rut) return;
     apiFetch<{ stats: RankingStats }>(`/api/users/${user.rut}/profile`)
@@ -149,6 +154,25 @@ export default function Perfil() {
     }
   };
 
+  const handleStartEditUsername = () => {
+    setUsernameInput((user?.username ?? "").replace(/^@/, ""));
+    setUsernameError("");
+    setEditingUsername(true);
+  };
+
+  const handleSaveUsername = async () => {
+    setUsernameError("");
+    setSavingUsername(true);
+    try {
+      await editarPerfil({ username: usernameInput });
+      setEditingUsername(false);
+    } catch (e: unknown) {
+      setUsernameError(e instanceof Error ? e.message : "Error al guardar el usuario");
+    } finally {
+      setSavingUsername(false);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -204,9 +228,56 @@ export default function Perfil() {
 
             {/* Nombre + Zona + categoría */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, textTransform: "uppercase", lineHeight: 1.2, marginBottom: 8, wordBreak: "break-word" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, textTransform: "uppercase", lineHeight: 1.2, marginBottom: 4, wordBreak: "break-word" }}>
                 {user?.nombre ?? "—"}
               </div>
+
+              {editingUsername ? (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13, color: "var(--text2)" }}>@</span>
+                    <input
+                      autoFocus
+                      className="ph-input"
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ""))}
+                      style={{ fontSize: 13, padding: "5px 8px", flex: 1 }}
+                      maxLength={24}
+                    />
+                    <button
+                      onClick={handleSaveUsername}
+                      disabled={savingUsername || usernameInput.length < 3}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, color: "var(--accent)", padding: 2 }}
+                    >
+                      {savingUsername ? "…" : "✓"}
+                    </button>
+                    <button
+                      onClick={() => { setEditingUsername(false); setUsernameError(""); }}
+                      disabled={savingUsername}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, color: "var(--text2)", padding: 2 }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {usernameError && (
+                    <div style={{ fontSize: 11, color: "#fca5a5", marginTop: 4 }}>{usernameError}</div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, color: "var(--text2)" }}>
+                    {user?.username ?? "Sin @usuario"}
+                  </span>
+                  <button
+                    onClick={handleStartEditUsername}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text2)", padding: 0, lineHeight: 1 }}
+                    title="Editar usuario (1 vez al mes)"
+                  >
+                    ✏️
+                  </button>
+                </div>
+              )}
+
               <select
                 className="ph-select"
                 value={zona}
