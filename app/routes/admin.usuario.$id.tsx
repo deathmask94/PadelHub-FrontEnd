@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import AdminRoute from "~/components/ui/AdminRoute";
+import Avatar from "~/components/ui/Avatar";
 import { adminFetch } from "~/services/adminAuth";
 
 interface AdminUserDetail {
@@ -134,9 +135,6 @@ export default function AdminUsuarioDetailPage() {
     patch(updates, "Cambios guardados correctamente");
   };
 
-  const initials = (name: string) =>
-    name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
 
@@ -191,9 +189,7 @@ export default function AdminUsuarioDetailPage() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 20, fontWeight: 700, overflow: "hidden",
                 }}>
-                  {user.photo_url
-                    ? <img src={user.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : initials(user.name)}
+                  <Avatar photoUrl={user.photo_url} name={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

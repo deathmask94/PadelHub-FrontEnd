@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch } from "~/services/auth";
 import { joinMatch } from "~/services/matches";
+import Avatar from "~/components/ui/Avatar";
 
 const DIAS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -61,8 +62,7 @@ const STATUS_LABEL: Record<string, string> = {
   in_progress: "En curso", finished: "Finalizado", cancelled: "Cancelado",
 };
 
-function Avatar({ user, size = 36 }: { user: { name: string; photo_url?: string | null }; size?: number }) {
-  const initials = user.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+function PlayerAvatar({ user, size = 36 }: { user: { name: string; photo_url?: string | null }; size?: number }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: size * 0.28, background: "var(--accent)",
@@ -70,9 +70,7 @@ function Avatar({ user, size = 36 }: { user: { name: string; photo_url?: string 
       fontSize: size * 0.38, fontFamily: "var(--font-display)", fontWeight: 700,
       color: "#fff", overflow: "hidden", flexShrink: 0,
     }}>
-      {user.photo_url
-        ? <img src={user.photo_url} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        : initials}
+      <Avatar photoUrl={user.photo_url} name={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
     </div>
   );
 }
@@ -385,7 +383,7 @@ export default function MatchDetail() {
           <div className="ph-card" style={{ marginBottom: 16, padding: "8px 14px" }}>
             {/* Organizer */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-              <Avatar user={match.users} size={38} />
+              <PlayerAvatar user={match.users} size={38} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>{match.users.name}</div>
                 <div style={{ fontSize: 11, color: "var(--text2)" }}>
@@ -404,7 +402,7 @@ export default function MatchDetail() {
                   borderBottom: i < activePlayers.length - 1 || emptySlots > 0 ? "1px solid var(--border)" : "none",
                 }}
               >
-                <Avatar user={mp.users} size={38} />
+                <PlayerAvatar user={mp.users} size={38} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{mp.users.name}</div>
                   <div style={{ fontSize: 11, color: "var(--text2)" }}>
@@ -505,7 +503,7 @@ export default function MatchDetail() {
                       borderTop: i > 0 ? "1px solid var(--border)" : undefined,
                     }}
                   >
-                    <Avatar user={u} size={34} />
+                    <PlayerAvatar user={u} size={34} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{u.name}</div>
                       <div style={{ fontSize: 11, color: "var(--text2)" }}>
@@ -825,7 +823,7 @@ export default function MatchDetail() {
                           borderBottom: i < toRate.length - 1 ? "1px solid var(--border)" : "none",
                         }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                            <Avatar user={p} size={30} />
+                            <PlayerAvatar user={p} size={30} />
                             <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
                           </div>
                           <div style={{ display: "flex", gap: 10 }}>

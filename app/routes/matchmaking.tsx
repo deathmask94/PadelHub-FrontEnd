@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
+import Avatar from "~/components/ui/Avatar";
 
 const NIVEL_LABEL: Record<string, string> = {
   primera: "1ra Categoría", segunda: "2da Categoría", tercera: "3ra Categoría",
@@ -26,8 +27,7 @@ interface SuggestionsResponse {
   suggestions: Suggestion[]; range_used: number; user_mmr: number;
 }
 
-function Avatar({ name, photo_url, size = 56 }: { name: string; photo_url: string | null; size?: number }) {
-  const initials = name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
+function RivalAvatar({ name, photo_url, size = 56 }: { name: string; photo_url: string | null; size?: number }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: size * 0.28, background: "var(--accent)",
@@ -35,9 +35,7 @@ function Avatar({ name, photo_url, size = 56 }: { name: string; photo_url: strin
       fontSize: size * 0.36, fontFamily: "var(--font-display)", fontWeight: 700,
       color: "#fff", overflow: "hidden", flexShrink: 0,
     }}>
-      {photo_url
-        ? <img src={photo_url} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        : initials}
+      <Avatar photoUrl={photo_url} name={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
     </div>
   );
 }
@@ -121,10 +119,6 @@ export default function Matchmaking() {
     }
   };
 
-  const initiales = user?.nombre
-    ? user.nombre.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
-    : "?";
-
   return (
     <div className="ph-screen">
       <div className="ph-scroll" style={{ padding: "0 0 24px" }}>
@@ -153,9 +147,7 @@ export default function Matchmaking() {
                 fontSize: 20, fontFamily: "var(--font-display)", fontWeight: 700,
                 color: "#fff", overflow: "hidden", flexShrink: 0,
               }}>
-                {user?.photo_url
-                  ? <img src={user.photo_url} alt={user.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : initiales}
+                <Avatar photoUrl={user?.photo_url} name={user?.nombre ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, textTransform: "uppercase", marginBottom: 4 }}>
@@ -248,7 +240,7 @@ export default function Matchmaking() {
               {/* Card del rival */}
               <div className="ph-card" style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                  <Avatar name={rival.name} photo_url={rival.photo_url} size={56} />
+                  <RivalAvatar name={rival.name} photo_url={rival.photo_url} size={56} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, textTransform: "uppercase", marginBottom: 4 }}>
                       {rival.name}

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
+import Avatar from "~/components/ui/Avatar";
 import { createMatch, invitePlayer } from "~/services/matches";
 
 interface PlayerOption {
@@ -20,10 +21,6 @@ function avatarColor(id: string) {
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
-function initials(name: string) {
-  return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-}
-
 const CLUBS = [
   { nombre: "Pádel Club Viña del Mar",  zona: "Viña del Mar",   abre: "09:00", cierra: "22:30" },
   { nombre: "Pádel Club Valparaíso",    zona: "Valparaíso",     abre: "08:00", cierra: "22:00" },
@@ -80,6 +77,11 @@ export default function CrearPartido() {
   const [generoRival,    setGeneroRival]    = useState<"" | "Masculino" | "Femenino">("");
   const [jugadores,      setJugadores]      = useState<(PlayerOption|null)[]>([null,null,null]);
   const [showPickerIdx,  setShowPickerIdx]  = useState<number|null>(null);
+  // Ids cuya foto de perfil fallo al cargar (asset borrado en Cloudinary, etc.):
+  // se usan para que el circulo vuelva al color solido en vez de fondo transparente.
+  const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
+  const markPhotoBroken = (id: string) =>
+    setBrokenPhotoIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   const [pickerSearch,   setPickerSearch]   = useState("");
   const [pickerPlayers,  setPickerPlayers]  = useState<PlayerOption[]>([]);
   const [pickerLoading,  setPickerLoading]  = useState(false);
@@ -420,11 +422,13 @@ export default function CrearPartido() {
                   >
                     {j ? (
                       <>
-                        <div className="ph-avatar" style={{ width:36, height:36, fontSize:13, background: j.photo_url ? "transparent" : avatarColor(j.id) }}>
-                          {j.photo_url
-                            ? <img src={j.photo_url} alt={j.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"inherit" }} />
-                            : initials(j.name)
-                          }
+                        <div className="ph-avatar" style={{ width:36, height:36, fontSize:13, background: (j.photo_url && !brokenPhotoIds.has(j.id)) ? "transparent" : avatarColor(j.id) }}>
+                          <Avatar
+                            photoUrl={j.photo_url}
+                            name={j.name}
+                            style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"inherit" }}
+                            onError={() => markPhotoBroken(j.id)}
+                          />
                         </div>
                         <span style={{ fontSize:11, color:"var(--text2)" }}>{j.name.split(" ")[0]}</span>
                       </>
@@ -470,11 +474,13 @@ export default function CrearPartido() {
                               cursor:"pointer", color:"var(--text)", fontFamily:"var(--font-body)", fontSize:13, textAlign:"left",
                             }}>
                             <div className="ph-avatar" style={{ width:30, height:30, fontSize:11, flexShrink:0,
-                              background: p.photo_url ? "transparent" : avatarColor(p.id) }}>
-                              {p.photo_url
-                                ? <img src={p.photo_url} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"inherit" }} />
-                                : initials(p.name)
-                              }
+                              background: (p.photo_url && !brokenPhotoIds.has(p.id)) ? "transparent" : avatarColor(p.id) }}>
+                              <Avatar
+                                photoUrl={p.photo_url}
+                                name={p.name}
+                                style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"inherit" }}
+                                onError={() => markPhotoBroken(p.id)}
+                              />
                             </div>
                             <div>
                               <div style={{ fontWeight:600 }}>{p.name}</div>

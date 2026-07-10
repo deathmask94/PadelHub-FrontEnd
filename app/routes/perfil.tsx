@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "~/context/AuthContext";
 import { apiFetch, uploadProfilePhoto, deleteProfilePhoto } from "~/services/auth";
 import NavBar from "~/components/ui/NavBar";
+import Avatar from "~/components/ui/Avatar";
 
 const ZONAS = ["Viña del Mar", "Valparaíso", "Quilpué", "Villa Alemana", "Concón"];
 
@@ -82,10 +83,6 @@ export default function Perfil() {
     zona            !== (user?.zona             ?? "") ||
     reminderEnabled !== (user?.reminder_enabled ?? true) ||
     photoFile !== null;
-
-  const initiales = user?.nombre
-    ? user.nombre.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
-    : "?";
 
   const matchesPlayed = stats?.matches_played ?? 0;
   const victorias     = stats?.wins           ?? 0;
@@ -170,10 +167,11 @@ export default function Perfil() {
                   className="ph-avatar"
                   style={{ width: 64, height: 64, fontSize: 22, background: "var(--accent)", borderRadius: 20, flexShrink: 0, overflow: "hidden" }}
                 >
-                  {photoPreview
-                    ? <img src={photoPreview} alt={user?.nombre ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
-                    : initiales
-                  }
+                  <Avatar
+                    photoUrl={photoPreview}
+                    name={user?.nombre ?? ""}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+                  />
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}

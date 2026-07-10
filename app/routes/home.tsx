@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { useNotifications } from "~/context/NotificationsContext";
 import NavBar from "~/components/ui/NavBar";
+import Avatar from "~/components/ui/Avatar";
 import { getMatches, getMyMatches, respondInvitation, type Match, type MatchFilters } from "~/services/matches";
 
 const DIAS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -80,10 +81,6 @@ export default function Home() {
     finally { setRespondingId(null); }
   };
 
-  const initiales = user?.nombre
-    ? user.nombre.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
-    : "?";
-
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -139,10 +136,11 @@ export default function Home() {
                 fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#fff",
               }}
             >
-              {user?.photo_url
-                ? <img src={user.photo_url} alt={user.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : initiales
-              }
+              <Avatar
+                photoUrl={user?.photo_url}
+                name={user?.nombre ?? ""}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             </button>
           </div>
         </div>

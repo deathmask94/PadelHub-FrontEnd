@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import AdminLayout from "~/components/ui/AdminLayout";
+import Avatar from "~/components/ui/Avatar";
 import { adminFetch } from "~/services/adminAuth";
 
 interface AdminUser {
@@ -71,9 +72,6 @@ export default function AdminUsuariosPage() {
   // Resetear página al cambiar filtros
   useEffect(() => { setPage(1); }, [debouncedQ, zone, level, status]);
 
-  const initials = (name: string) =>
-    name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-
   return (
     <AdminLayout>
       <div style={{ padding: "24px 48px" }}>
@@ -140,9 +138,7 @@ export default function AdminUsuariosPage() {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 14, fontWeight: 700, overflow: "hidden",
                   }}>
-                    {u.photo_url
-                      ? <img src={u.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : initials(u.name)}
+                    <Avatar photoUrl={u.photo_url} name={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
 
                   {/* Info */}
