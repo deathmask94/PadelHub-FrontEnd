@@ -94,6 +94,30 @@ function PlayerAvatar({ user, size = 36 }: { user: { name: string; photo_url?: s
   );
 }
 
+// Misma lógica usada tanto para bloquear el botón "←" en pantalla como el
+// gesto/botón físico de retroceso de Android (ver el useEffect de popstate
+// más abajo) -- si no puede salir de una forma, tampoco debe poder de la
+// otra.
+function computeBlockedReason(match: MatchDetail | null, userId: string | undefined, ratingDone: boolean): string | null {
+  if (!match) return null;
+
+  const mustRegister = match.is_organizer && (match.status === "in_progress" || match.status === "confirmed") && !match.match_results;
+  if (mustRegister) return "Registra el resultado antes de salir";
+
+  const iAmConfirmedPlayer = match.is_organizer || match.match_players.some((p) => p.user_id === userId && p.status === "confirmed");
+  const hasPendingResult   = !!match.match_results && !match.match_results.confirmed_by;
+  const iRegisteredResult  = match.match_results?.registered_by === userId;
+  const myPlayerRow        = match.match_players.find((p) => p.user_id === userId);
+  const iAlreadyConfirmed  = myPlayerRow?.result_confirmed === true;
+  const canConfirm = hasPendingResult && !iRegisteredResult && iAmConfirmedPlayer && !iAlreadyConfirmed;
+  if (canConfirm) return "Confirma el resultado antes de salir";
+
+  const mustRate = match.can_rate && !match.has_rated && !ratingDone;
+  if (mustRate) return "Valora a tus compañeros antes de salir";
+
+  return null;
+}
+
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -151,6 +175,27 @@ export default function MatchDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Bloquea tambien el boton/gesto fisico de retroceso de Android (no solo
+  // el "←" en pantalla): sin esto, el usuario podia saltarse el registro,
+  // la confirmacion o la valoracion con el back nativo del telefono. Salir
+  // de la app entera (boton central/home del telefono) sigue funcionando
+  // siempre -- eso ya no depende de la app.
+  const isFlowBlocked = computeBlockedReason(match, user?.id, ratingDone) !== null;
+  const blockedReasonRef = useRef<string | null>(null);
+  blockedReasonRef.current = computeBlockedReason(match, user?.id, ratingDone);
+  useEffect(() => {
+    if (!isFlowBlocked) return;
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      if (blockedReasonRef.current) {
+        window.history.pushState(null, "", window.location.href);
+        showToast(blockedReasonRef.current);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isFlowBlocked]);
 
   // Al llegar a la pantalla de valoraciones, todos parten en 5 estrellas
   // (estilo Uber); el usuario solo baja las que quiera calificar peor.
@@ -394,6 +439,20 @@ export default function MatchDetail() {
     .filter((p) => p.status === "confirmed" && !p.result_confirmed)
     .map((p) => p.users.name);
 
+  // Ademas de registrar el resultado, no se puede salir de la pantalla con
+  // una confirmacion o una valoracion pendiente: si no, quedan "olvidadas"
+  // apenas el jugador navega a otro lado y nadie vuelve a completarlas. La
+  // valoracion se autolibera sola cuando expira la ventana de 24h (can_rate
+  // pasa a false desde el backend).
+  const mustRateNow = match.can_rate && !match.has_rated && !ratingDone;
+  const blockedReason = mustRegisterResult
+    ? "Registra el resultado antes de salir"
+    : canConfirmResult
+    ? "Confirma el resultado antes de salir"
+    : mustRateNow
+    ? "Valora a tus compañeros antes de salir"
+    : null;
+
   return (
     <div className="ph-screen">
       <div className="ph-scroll" style={{ padding: "0 0 24px" }}>
@@ -402,8 +461,8 @@ export default function MatchDetail() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px" }}>
           <button
             className="ph-back-btn"
-            onClick={() => mustRegisterResult ? showToast("Registra el resultado antes de salir") : navigate(-1)}
-            style={mustRegisterResult ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
+            onClick={() => blockedReason ? showToast(blockedReason) : navigate(-1)}
+            style={blockedReason ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
           >
             ←
           </button>
