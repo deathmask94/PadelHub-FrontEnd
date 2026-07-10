@@ -45,7 +45,12 @@ type RatingValues = { fair_play: number; punctuality: number; skill_level: numbe
 interface SetResult { winner: "team_a" | "team_b" | ""; gamesA: string; gamesB: string }
 const EMPTY_SET: SetResult = { winner: "", gamesA: "", gamesB: "" };
 function isSetValid(s: SetResult) {
-  return s.winner !== "" && /^\d$/.test(s.gamesA) && /^\d$/.test(s.gamesB);
+  if (s.winner === "" || !/^\d$/.test(s.gamesA) || !/^\d$/.test(s.gamesB)) return false;
+  // El equipo marcado como ganador del set debe tener mas games que el
+  // otro: sin este chequeo se puede marcar "Ganó B" con, por ejemplo,
+  // 6-2 (A con mas games), guardando una inconsistencia sin avisar.
+  const a = Number(s.gamesA), b = Number(s.gamesB);
+  return s.winner === "team_a" ? a > b : b > a;
 }
 
 function StarRating({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
@@ -676,6 +681,11 @@ export default function MatchDetail() {
                         />
                       </div>
                     </div>
+                    {set.winner !== "" && /^\d$/.test(set.gamesA) && /^\d$/.test(set.gamesB) && !isSetValid(set) && (
+                      <div style={{ fontSize: 11, color: "#ef4444", marginTop: 6 }}>
+                        ⚠️ Marcaste "{set.winner === "team_a" ? "Ganó A" : "Ganó B"}" pero esos games no le dan la victoria a ese equipo.
+                      </div>
+                    )}
                   </div>
                 ))}
 
