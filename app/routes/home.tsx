@@ -90,6 +90,14 @@ export default function Home() {
     myMatches.find((m) => m.status === "open" || m.status === "confirmed") ??
     null;
 
+  // Partido propio que ya empezo (el backend lo pasa a in_progress solo
+  // cuando la hora real llego) y todavia no tiene resultado registrado:
+  // mientras no se registre, el partido nunca pasa a "finalizado" y nadie
+  // mas puede hacerlo por el organizador.
+  const pendingResultMatch = myMatches.find(
+    (m) => m.organizer_id === user?.id && m.status === "in_progress",
+  );
+
   return (
     <div className="ph-screen">
       <div className="ph-scroll" style={{ padding: "20px 20px 0" }}>
@@ -144,6 +152,29 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* ── Aviso de resultado pendiente ── */}
+        {pendingResultMatch && (
+          <div
+            onClick={() => navigate(`/matches/${pendingResultMatch.id}`)}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+              background: "rgba(250,204,21,0.1)", border: "1px solid #facc15",
+              borderRadius: 12, padding: "12px 14px", marginBottom: 20,
+            }}
+          >
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#facc15" }}>
+                Tienes un resultado pendiente de registrar
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text2)" }}>
+                {pendingResultMatch.club} · Toca para registrarlo
+              </div>
+            </div>
+            <span style={{ color: "#facc15", fontSize: 16 }}>→</span>
+          </div>
+        )}
 
         {/* ── MMR card ── */}
         <div className="ph-mmr-bar" style={{ marginBottom: 20 }}>

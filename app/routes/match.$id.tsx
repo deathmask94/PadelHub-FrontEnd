@@ -39,6 +39,15 @@ interface MatchDetail {
 
 type RatingValues = { fair_play: number; punctuality: number; skill_level: number };
 
+// Cada set guarda quien lo gano Y los games de cada equipo por separado,
+// para que nunca sea ambiguo (antes un solo campo de texto por equipo
+// dejaba adivinar quien gano el set con que numero).
+interface SetResult { winner: "team_a" | "team_b" | ""; gamesA: string; gamesB: string }
+const EMPTY_SET: SetResult = { winner: "", gamesA: "", gamesB: "" };
+function isSetValid(s: SetResult) {
+  return s.winner !== "" && /^\d$/.test(s.gamesA) && /^\d$/.test(s.gamesB);
+}
+
 function StarRating({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -95,11 +104,12 @@ export default function MatchDetail() {
   const [responding,  setResponding]  = useState(false);
   const [joining,     setJoining]     = useState(false);
 
-  const [resultForm,  setResultForm]  = useState({
-    organizer_team: "" as "team_a" | "team_b" | "",
-    winner:         "" as "team_a" | "team_b" | "draw" | "",
-    score_a:        "",
-    score_b:        "",
+  const [resultForm,  setResultForm]  = useState<{
+    organizer_team: "team_a" | "team_b" | "";
+    sets: SetResult[];
+  }>({
+    organizer_team: "",
+    sets: [EMPTY_SET, EMPTY_SET, EMPTY_SET],
   });
   const [submittingResult, setSubmittingResult] = useState(false);
   const [mmrChanges,       setMmrChanges]       = useState<MMRChange[] | null>(null);
@@ -204,17 +214,42 @@ export default function MatchDetail() {
     }
   };
 
+  // En individual (1v1) no existe ambiguedad de equipo: el organizador es
+  // simplemente "el otro" respecto de quien se unio. Preguntarle en que
+  // equipo jugo es confuso y ademas puede chocar con el equipo que el
+  // join ya le asigno automaticamente al rival, dejando los dos jugadores
+  // en el mismo equipo y el resultado sin poder registrarse nunca.
+  const isSinglesMatch = match?.format === "singles";
+  const opponentEntry  = match?.match_players.find((p) => p.status === "confirmed");
+  const autoOrganizerTeam: "team_a" | "team_b" | undefined =
+    isSinglesMatch && opponentEntry
+      ? (opponentEntry.team === "team_a" ? "team_b" : "team_a")
+      : undefined;
+  const effectiveOrganizerTeam = resultForm.organizer_team || autoOrganizerTeam || "";
+
+  const setsToPlay = resultForm.sets.slice(0, 2).every((s) => isSetValid(s)) && resultForm.sets[0].winner === resultForm.sets[1].winner
+    ? 2
+    : 3;
+  const playedSets = resultForm.sets.slice(0, setsToPlay);
+  const allSetsValid = playedSets.every((s) => isSetValid(s));
+  const setWins = playedSets.reduce(
+    (acc, s) => (s.winner === "team_a" ? { ...acc, a: acc.a + 1 } : s.winner === "team_b" ? { ...acc, b: acc.b + 1 } : acc),
+    { a: 0, b: 0 },
+  );
+  const matchWinner: "team_a" | "team_b" | "" = setWins.a === 2 ? "team_a" : setWins.b === 2 ? "team_b" : "";
+  const canSubmitResult = !!effectiveOrganizerTeam && allSetsValid && !!matchWinner;
+
   const handleSubmitResult = async () => {
-    if (!id || !resultForm.organizer_team || !resultForm.winner) return;
+    if (!id || !canSubmitResult) return;
     setSubmittingResult(true);
     try {
       const data = await apiFetch<{ changes: MMRChange[] }>(`/api/matches/${id}/result`, {
         method: "POST",
         body: JSON.stringify({
-          winner:         resultForm.winner,
-          organizer_team: resultForm.organizer_team,
-          score_team_a:   resultForm.score_a || undefined,
-          score_team_b:   resultForm.score_b || undefined,
+          winner:         matchWinner,
+          organizer_team: effectiveOrganizerTeam,
+          score_team_a:   playedSets.map((s) => s.gamesA).join("-"),
+          score_team_b:   playedSets.map((s) => s.gamesB).join("-"),
         }),
       });
       setMmrChanges(data.changes);
@@ -276,13 +311,24 @@ export default function MatchDetail() {
   const canInvite    = match.is_organizer && match.status === "open" && emptySlots > 0;
   const canJoin      = !match.is_organizer && match.my_status === null && match.status === "open" && emptySlots > 0;
 
+  // Si el organizador tiene el resultado pendiente, no puede salir de la
+  // pantalla sin registrarlo (ni saltarselo): el partido quedaria "en
+  // curso" para siempre y nadie mas puede registrar el resultado por el.
+  const mustRegisterResult = match.is_organizer && (match.status === "in_progress" || match.status === "confirmed") && !mmrChanges;
+
   return (
     <div className="ph-screen">
       <div className="ph-scroll" style={{ padding: "0 0 24px" }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px" }}>
-          <button className="ph-back-btn" onClick={() => navigate(-1)}>←</button>
+          <button
+            className="ph-back-btn"
+            onClick={() => mustRegisterResult ? showToast("Registra el resultado antes de salir") : navigate(-1)}
+            style={mustRegisterResult ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
+          >
+            ←
+          </button>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 700 }}>Detalle del partido</div>
           <span className="ph-pill ph-pill-green" style={{ fontSize: 11 }}>
             {STATUS_LABEL[match.status] ?? match.status}
@@ -545,67 +591,98 @@ export default function MatchDetail() {
               </div>
               <div className="ph-card" style={{ marginBottom: 16 }}>
 
-                {/* Equipo del organizador */}
-                <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>¿En qué equipo jugaste?</div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                  {(["team_a", "team_b"] as const).map((t) => (
-                    <button key={t}
-                      onClick={() => setResultForm((f) => ({ ...f, organizer_team: t }))}
-                      style={{
-                        flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
-                        border: `1px solid ${resultForm.organizer_team === t ? "var(--accent)" : "var(--border)"}`,
-                        background: resultForm.organizer_team === t ? "rgba(132,204,22,0.12)" : "var(--bg3)",
-                        color: resultForm.organizer_team === t ? "var(--accent)" : "var(--text2)",
-                        fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
-                      }}
-                    >
-                      {t === "team_a" ? "Equipo A" : "Equipo B"}
-                    </button>
-                  ))}
-                </div>
+                {/* Equipo del organizador: solo aplica en dobles. En individual
+                    no hay ambiguedad (es directamente contra el otro jugador),
+                    y preguntarlo podia chocar con el equipo que join.ts ya le
+                    asigna al rival, dejando a los dos en el mismo equipo. */}
+                {!isSinglesMatch && (
+                  <>
+                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>¿En qué equipo jugaste?</div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                      {(["team_a", "team_b"] as const).map((t) => (
+                        <button key={t}
+                          onClick={() => setResultForm((f) => ({ ...f, organizer_team: t }))}
+                          style={{
+                            flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
+                            border: `1px solid ${resultForm.organizer_team === t ? "var(--accent)" : "var(--border)"}`,
+                            background: resultForm.organizer_team === t ? "rgba(132,204,22,0.12)" : "var(--bg3)",
+                            color: resultForm.organizer_team === t ? "var(--accent)" : "var(--text2)",
+                            fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
+                          }}
+                        >
+                          {t === "team_a" ? "Equipo A" : "Equipo B"}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
 
-                {/* Ganador */}
-                <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>¿Quién ganó?</div>
-                <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                  {([
-                    { val: "team_a", label: "Eq. A ganó" },
-                    { val: "team_b", label: "Eq. B ganó" },
-                    { val: "draw",   label: "Empate"     },
-                  ] as const).map(({ val, label }) => (
-                    <button key={val}
-                      onClick={() => setResultForm((f) => ({ ...f, winner: val }))}
-                      style={{
-                        flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
-                        border: `1px solid ${resultForm.winner === val ? "var(--accent)" : "var(--border)"}`,
-                        background: resultForm.winner === val ? "rgba(132,204,22,0.12)" : "var(--bg3)",
-                        color: resultForm.winner === val ? "var(--accent)" : "var(--text2)",
-                        fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Score opcional */}
-                <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>Score (opcional)</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-                  <div>
-                    <label className="ph-label" style={{ fontSize: 11 }}>Equipo A</label>
-                    <input className="ph-input" placeholder="ej. 6-3" value={resultForm.score_a}
-                      onChange={(e) => setResultForm((f) => ({ ...f, score_a: e.target.value }))} />
+                {/* Sets: cada uno guarda quien lo gano Y los games de cada
+                    equipo por separado, para que nunca quede la duda de
+                    quien gano con que numero. El set 3 solo aparece si el
+                    partido no quedo decidido 2-0 en los dos primeros. */}
+                {resultForm.sets.slice(0, setsToPlay).map((set, i) => (
+                  <div key={i} style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>SET {i + 1}</div>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                      {(["team_a", "team_b"] as const).map((t) => (
+                        <button key={t}
+                          onClick={() => setResultForm((f) => {
+                            const sets = [...f.sets];
+                            sets[i] = { ...sets[i], winner: t };
+                            return { ...f, sets };
+                          })}
+                          style={{
+                            flex: 1, padding: "7px 0", borderRadius: 8, cursor: "pointer",
+                            border: `1px solid ${set.winner === t ? "var(--accent)" : "var(--border)"}`,
+                            background: set.winner === t ? "rgba(132,204,22,0.12)" : "var(--bg3)",
+                            color: set.winner === t ? "var(--accent)" : "var(--text2)",
+                            fontFamily: "var(--font-body)", fontSize: 12, fontWeight: 700,
+                          }}
+                        >
+                          {t === "team_a" ? "Ganó A" : "Ganó B"}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div>
+                        <label className="ph-label" style={{ fontSize: 11 }}>Games Equipo A</label>
+                        <input
+                          className="ph-input" inputMode="numeric" maxLength={1} placeholder="0-9"
+                          value={set.gamesA}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/\D/g, "").slice(0, 1);
+                            setResultForm((f) => {
+                              const sets = [...f.sets];
+                              sets[i] = { ...sets[i], gamesA: v };
+                              return { ...f, sets };
+                            });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="ph-label" style={{ fontSize: 11 }}>Games Equipo B</label>
+                        <input
+                          className="ph-input" inputMode="numeric" maxLength={1} placeholder="0-9"
+                          value={set.gamesB}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/\D/g, "").slice(0, 1);
+                            setResultForm((f) => {
+                              const sets = [...f.sets];
+                              sets[i] = { ...sets[i], gamesB: v };
+                              return { ...f, sets };
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="ph-label" style={{ fontSize: 11 }}>Equipo B</label>
-                    <input className="ph-input" placeholder="ej. 3-6" value={resultForm.score_b}
-                      onChange={(e) => setResultForm((f) => ({ ...f, score_b: e.target.value }))} />
-                  </div>
-                </div>
+                ))}
 
                 <button
                   className="ph-btn"
                   onClick={handleSubmitResult}
-                  disabled={!resultForm.organizer_team || !resultForm.winner || submittingResult}
+                  disabled={!canSubmitResult || submittingResult}
                 >
                   {submittingResult ? "Registrando…" : "Registrar resultado"}
                 </button>
